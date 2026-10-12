@@ -140,6 +140,8 @@ function cvssCard() {
 }
 
 export function renderToolkit() {
+  // Tools are listed A-Z by title: CIDR / IP range calculator, CVSS vector decoder, Decoder / encoder, Email header analyser, IOC extractor & defanger, Timestamp converter.
+  // (In the two-column grid the order reads left to right, then down.) A new tool should be inserted in its alphabetical place.
   return h("div", {}, h("h1", {}, "Analyst toolkit"),
-    h("div", { class: "grid two" }, iocCard(), headersCard(), decoderCard(), timeCard(), cidrCard(), cvssCard()));
+    h("div", { class: "grid two" }, cidrCard(), cvssCard(), decoderCard(), headersCard(), iocCard(), timeCard()));
 }

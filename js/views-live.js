@@ -80,12 +80,17 @@ const NEEDS = [
   ["KEV catalogue", ["kev"]], ["ATT&CK data download", ["attack"]], ["Security headlines", ["hn"]],
 ];
 
+// The sources table is listed A-Z by name. This only changes how the table is DISPLAYED; "Test all sources" still checks them in the order
+// defined in net.js, and results appear in their alphabetical row as each check finishes.
+const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const SOURCES_AZ = [...SOURCES].sort((a, b) => collator.compare(a.name, b.name));
+
 export function renderSources() {
   const probes = store.get("probe", {}) || {};
   const status = h("p", { class: "small muted", "aria-live": "polite" });
   const body = h("div", {});
 
-  const rows = () => SOURCES.map((s) => {
+  const rows = () => SOURCES_AZ.map((s) => {
     const p = probes[s.id];
     return h("tr", {}, h("td", {}, h("strong", {}, s.name), h("div", { class: "small muted" }, s.use)), h("td", {}, h("code", {}, s.host)),
       h("td", {}, p ? [badge(p.ok ? "Works" : "Blocked / failed", p.ok ? "low" : "critical"), h("div", { class: "small muted" }, `${p.msg} · ${timeAgo(p.at)}`)] : h("span", { class: "muted small" }, "Not tested")));
@@ -127,6 +132,6 @@ export function renderSources() {
     h("section", { class: "card" }, h("h2", {}, "Privacy"),
       h("ul", { class: "small" },
         h("li", {}, "Requests go straight from your browser to the host shown above, with no cookies and no referrer, and only when you press a button."),
-        h("li", {}, "No API keys are used or stored. NVD's keyless limit is about 5 requests per 30 seconds; the app paces itself."),
+        h("li", {}, "No API keys are used or stored. NVD's keyless limit is about 5 requests per 30 seconds; the app paces itself to."),
         h("li", {}, "The reputation links elsewhere (VirusTotal etc.) open a new tab and send the indicator to that site only when you select them."))));
 }
