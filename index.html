@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- connect-src lists exactly the hosts in js/net.js (a test keeps the two in sync). No inline script/style, no eval. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://services.nvd.nist.gov https://vulnerability.circl.lu https://raw.githubusercontent.com https://api.first.org https://hn.algolia.com; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; media-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="SOC Analyst dashboard: live CVE / KEV lookups, MITRE ATT&amp;CK, templates, playbooks and analyst tools. Runs entirely in the browser.">
+  <title>SOC Analyst Dashboard</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- The landing page's code is fetched in parallel instead of discovered one level at a time. Other pages load on demand. -->
+  <link rel="modulepreload" href="js/app.js">
+  <link rel="modulepreload" href="js/ui.js">
+  <link rel="modulepreload" href="js/lib.js">
+  <link rel="modulepreload" href="js/state.js">
+  <link rel="modulepreload" href="js/store.js">
+  <link rel="modulepreload" href="js/sanitize.js">
+  <link rel="modulepreload" href="js/tasks.js">
+  <link rel="modulepreload" href="js/net.js">
+  <link rel="modulepreload" href="js/live.js">
+  <link rel="modulepreload" href="js/convert.js">
+  <link rel="modulepreload" href="js/live-ui.js">
+  <link rel="modulepreload" href="js/views-feed.js">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true">◈</span> SOC Dashboard</div>
+    <nav id="nav" aria-label="Main">
+      <a href="#/overview" data-route="overview">Overview</a>
+      <a href="#/cves" data-route="cves">CVEs</a>
+      <a href="#/kev" data-route="kev">KEV</a>
+      <a href="#/news" data-route="news">News</a>
+      <a href="#/lookup" data-route="lookup">Lookup</a>
+      <a href="#/attack" data-route="attack">ATT&amp;CK</a>
+      <a href="#/templates" data-route="templates">Templates</a>
+      <a href="#/playbooks" data-route="playbooks">Playbooks</a>
+      <a href="#/toolkit" data-route="toolkit">Toolkit</a>
+      <a href="#/reference" data-route="reference">Reference</a>
+      <a href="#/sources" data-route="sources">Sources</a>
+    </nav>
+    <input id="quick" type="search" class="quick" placeholder="Quick lookup ( / )  T1059 · APT29 · CVE-…" aria-label="Quick lookup">
+    <div class="top-actions">
+      <span id="updated" class="muted small" title="When each dataset was last fetched"></span>
+      <button id="refresh" class="btn js-task" type="button" title="Fetch the KEV catalogue and the latest CVEs now">↻ Update</button>
+      <button id="theme" class="btn" type="button" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <div id="live" class="live" role="status" aria-live="polite" hidden>
+    <span id="live-msg"></span>
+    <button id="live-cancel" class="btn sm danger" type="button" hidden>Cancel</button>
+    <button id="live-close" class="btn sm" type="button" aria-label="Dismiss">✕</button>
+  </div>
+  <div id="banner" class="banner" hidden></div>
+  <main id="app" tabindex="-1" aria-live="polite"><p class="muted">Loading…</p></main>
+
+  <footer class="foot small muted">
+    Data is fetched by your browser, only when you ask, from
+    <a href="https://nvd.nist.gov/" rel="noopener noreferrer" target="_blank">NVD</a>,
+    <a href="https://vulnerability.circl.lu/" rel="noopener noreferrer" target="_blank">CIRCL</a>,
+    <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" rel="noopener noreferrer" target="_blank">CISA KEV</a>,
+    <a href="https://www.first.org/epss/" rel="noopener noreferrer" target="_blank">FIRST EPSS</a>,
+    <a href="https://attack.mitre.org/" rel="noopener noreferrer" target="_blank">MITRE ATT&amp;CK&reg;</a> (&copy; The MITRE Corporation, used under its terms of use) and Hacker News.
+    This product uses data from the NVD API but is not endorsed or certified by the NVD. Everything you type here stays in your browser.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
