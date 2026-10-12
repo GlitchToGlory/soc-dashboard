@@ -105,6 +105,9 @@ ul.plain li:last-child { border-bottom: 0; }
 .news-item .t { font-weight: 600; } .news-item .s { color: var(--muted); font-size: .88rem; margin-top: .15rem; }
 
 .tpl-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1rem; align-items: start; }
+/* The Templates and Playbooks sidebars are <nav> elements, so the top-menu rule above (display:flex; flex-wrap:wrap) also reached them
+   and let short items share a row (e.g. "TRIAGE" beside "+ New template"). A sidebar is a plain vertical list. */
+.tpl-list { display: block; }
 .tpl-list h3 { margin: .9rem 0 .3rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
 .tpl-list a { display: block; padding: .35rem .6rem; border-radius: 8px; color: var(--text); }
 .tpl-list a:hover { background: var(--panel2); text-decoration: none; }
@@ -128,8 +131,15 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
 .tab { padding: .4rem .8rem; border-radius: 8px 8px 0 0; color: var(--muted); font-weight: 600; }
 .tab:hover { text-decoration: none; background: var(--panel2); color: var(--text); }
 .tab.active { background: var(--panel); color: var(--accent); border: 1px solid var(--border); border-bottom-color: var(--panel); margin-bottom: -1px; }
-.matrix { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .75rem; align-items: flex-start; }
-.mx-col { flex: 0 0 190px; min-width: 190px; }
+
+/* ATT&CK matrix. The column width and gap are defined once (here) and used by the matrix AND by the scroll bar above it, so the two
+   always scroll the same distance. The matrix's own bottom scroll bar is hidden: the bar above the tactic headings replaces it. */
+.mx-wrap { --mx-col: 190px; --mx-gap: .5rem; }
+.mx-top { display: flex; gap: var(--mx-gap); overflow-x: auto; overflow-y: hidden; margin-bottom: .35rem; }
+.mx-top > span { flex: 0 0 var(--mx-col); min-width: var(--mx-col); height: 1px; }
+.matrix { display: flex; gap: var(--mx-gap); overflow-x: auto; padding-bottom: .75rem; align-items: flex-start; scrollbar-width: none; }
+.matrix::-webkit-scrollbar { display: none; }
+.mx-col { flex: 0 0 var(--mx-col); min-width: var(--mx-col); }
 .mx-head { position: sticky; top: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; padding: .4rem .5rem; border-radius: 6px; margin-bottom: .35rem; font-size: .85rem; }
 .mx-head .small { color: inherit; opacity: .8; font-weight: 500; }
 .mx-cell { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: .3rem .4rem; margin-bottom: .3rem; font-size: .8rem; }

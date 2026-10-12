@@ -98,7 +98,16 @@ function matrix(d) {
                    : (subs.length ? h("div", { class: "small muted" }, `${subs.length} sub-technique${subs.length > 1 ? "s" : ""}`) : null));
       }));
   });
-  return h("div", { class: "matrix", role: "region", "aria-label": "ATT&CK matrix" }, cols);
+  const grid = h("div", { class: "matrix", role: "region", "aria-label": "ATT&CK matrix", tabindex: "0" }, cols);
+
+  // The horizontal scroll bar sits ABOVE the tactic headings instead of at the very bottom of a long page. It is a thin strip with one
+  // empty 1px-high placeholder per column; the stylesheet gives the placeholders the same width and gap as the columns (shared CSS
+  // variables), so both scroll the same distance. Moving either one moves the other. (The matrix's own bottom scroll bar is hidden in CSS.)
+  const top = h("div", { class: "mx-top", "aria-hidden": "true", tabindex: "-1" }, d.tactics.map(() => h("span", {})));
+  const follow = (from, to) => () => { if (Math.abs(to.scrollLeft - from.scrollLeft) > 0.5) to.scrollLeft = from.scrollLeft; };   // only moves when they differ, so the two can't ping-pong
+  top.addEventListener("scroll", follow(top, grid));
+  grid.addEventListener("scroll", follow(grid, top));
+  return h("div", { class: "mx-wrap" }, top, grid);
 }
 
 function searchResults(d) {
