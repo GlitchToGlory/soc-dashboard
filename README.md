@@ -9,7 +9,7 @@ Nothing is fetched until **you** press a button, so there is no background job, 
 | **Overview** | One-click *Fetch KEV, CVEs + News*, risk-ranked CVEs (KEV → EPSS → CVSS), latest KEV additions, headlines, your vendor/product watchlist |
 | **CVEs** | Live fetch of newly published CVEs from NVD (last 1–30 days) with EPSS scores; filters, KEV flag, *Draft brief* |
 | **KEV** | Live fetch of the CISA Known Exploited Vulnerabilities catalogue; search, ransomware filter |
-| **News** | Live security headlines from Hacker News search (topic selector). Main security news sites are linked under Reference → Links |
+| **News** | Live security headlines from Hacker News search, covering every topic in one fetch (vulnerabilities, CVEs, ransomware, zero-days, breaches, malware, phishing), with instant topic filters – "All topics" by default. Main security news sites are linked under Reference → Links |
 | **Lookup** | One CVE (NVD, falling back to CIRCL), many CVEs pasted from a ticket (up to 25), or NVD keyword search |
 | **ATT&CK** | Full MITRE ATT&CK lookup: matrix, search, groups, software, mitigations, detections, text→technique mapper, Navigator layer export. One-time ~40 MB download, built in a Web Worker and stored in your browser |
 | **Templates / Playbooks / Toolkit / Reference** | 11 analyst templates, 6 response checklists, IOC extractor/defanger, incident timeline builder (any timestamp format → sorted UTC timeline → incident report), URL analyser & unwrapper (Safe Links, Proofpoint, lookalike domains), email-header analyser, Base64/URL/hex decoder, timestamp + FILETIME, CIDR, CVSS decoder, 17 KQL hunting queries, TLP/kill chain/ports/commands/event IDs, 56 links |

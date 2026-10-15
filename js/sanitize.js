@@ -29,6 +29,7 @@ export function cleanKev(list) {
 export function cleanNews(list) {
   return objs(list, 1000).map((n) => ({
     title: str(n.title, 400), link: url(n.link), source: str(n.source, 100), date: str(n.date, 40), summary: str(n.summary, 600),
+    topics: Array.isArray(n.topics) ? n.topics.filter((t) => typeof t === "string" && /^[a-z]{2,20}$/.test(t)).slice(0, 10) : [],
   })).filter((n) => n.title && n.link);
 }
 

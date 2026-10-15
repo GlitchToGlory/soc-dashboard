@@ -1,7 +1,9 @@
 import { h, ext, badge, copyBtn, pagedList, field, select, debounce, empty, nodes, lazyDetails } from "./ui.js";
 import { state, setWatch } from "./state.js";
 import { fmtUTC, timeAgo, matchesWatchlist, SEV_ORDER } from "./lib.js";
-import { taskButton, daysSelect, topicSelect, epssCheck, fetchedLine, getStarted } from "./live-ui.js";
+import { taskButton, daysSelect, topicPicker, epssCheck, fetchedLine, getStarted } from "./live-ui.js";
+import { getSettings } from "./tasks.js";
+import { TOPIC_LABELS } from "./live.js";
 
 const pct = (x) => (x * 100).toFixed(1) + "%";
 // Plain string order for ISO dates / IDs: much cheaper than localeCompare on every keystroke, and identical for these values.
@@ -156,6 +158,7 @@ export function renderOverview() {
       h("section", { class: "card" }, h("h2", {}, "Latest CISA KEV additions", h("a", { href: "#/kev" }, "All →")),
         state.kev.length ? h("div", { class: "list" }, state.kev.slice(0, 8).map(kevItem)) : empty("KEV not fetched yet.")),
       h("section", { class: "card" }, h("h2", {}, "Latest news", h("a", { href: "#/news" }, "All →")),
+        state.news.length ? h("p", { class: "small muted" }, "Newest headlines across all topics.") : null,
         state.news.length ? state.news.slice(0, 8).map(newsItem) : empty("No headlines fetched yet.")),
       watchCard));
 }
@@ -246,17 +249,22 @@ const newsFilter = { q: "" };
 
 export function renderNews() {
   const results = h("div", { class: "card" });
+  let topic = getSettings().topic;
+  const tagged = state.news.some((n) => n.topics && n.topics.length);
   const update = () => {
     const q = newsFilter.q.trim().toLowerCase();
-    const items = state.news.filter((n) => !q || `${n.title} ${n.summary}`.toLowerCase().includes(q));
-    results.replaceChildren(h("p", { class: "muted small" }, `${items.length} of ${state.news.length} stories`),
-      items.length ? pagedList(items, newsItem, 30) : empty("No stories match."));
+    const items = state.news.filter((n) => (topic === "all" || !tagged || (n.topics || []).includes(topic)) && (!q || `${n.title} ${n.summary}`.toLowerCase().includes(q)));
+    results.replaceChildren(...nodes(
+      !tagged && topic !== "all" ? h("p", { class: "small muted" }, "These headlines were fetched before topic filters existed – press ↻ Fetch headlines to sort them by topic.") : null,
+      h("p", { class: "muted small" }, `${items.length} of ${state.news.length} stories${topic !== "all" && tagged ? ` · ${TOPIC_LABELS[topic]}` : ""}`),
+      items.length ? pagedList(items, newsItem, 30) : empty("No stories match.")));
   };
   const search = h("input", { type: "search", placeholder: "Search headlines…", value: newsFilter.q, "aria-label": "Search news" });
   search.addEventListener("input", debounce(() => { newsFilter.q = search.value; update(); }));
   update();
   return h("div", {}, h("h1", {}, "Security news"),
-    h("p", { class: "muted small" }, "Headlines come from Hacker News search (security topics) — community-ranked links, not a newswire. Most security news sites don't allow direct reads from a web page, so the main ones are linked under Reference → Links instead."),
-    h("div", { class: "row" }, taskButton("news", "↻ Fetch headlines", { primary: true }), topicSelect(), fetchedLine("news", "News")),
+    h("p", { class: "muted small" }, "Headlines come from Hacker News searches for each security topic below, combined — community-ranked links, not a newswire. Each fetch covers every topic; the topic buttons just filter the list. Most security news sites don't allow direct reads from a web page, so the main ones are linked under Reference → Links instead."),
+    state.news.length ? topicPicker((t) => { topic = t; update(); }) : null,
+    h("div", { class: "row" }, taskButton("news", "↻ Fetch headlines", { primary: true }), fetchedLine("news", "News")),
     state.news.length ? h("div", { class: "toolbar" }, field("Search", search)) : getStarted(), state.news.length ? results : null);
 }

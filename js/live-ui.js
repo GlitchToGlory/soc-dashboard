@@ -12,7 +12,24 @@ export function taskButton(name, label, { primary = false, overrides, title } = 
 }
 
 export const daysSelect = () => select(DAY_CHOICES.map((d) => [String(d), `Last ${d} day${d > 1 ? "s" : ""}`]), String(getSettings().days), (v) => saveSettings({ days: Number(v) }));
-export const topicSelect = () => select(Object.entries(TOPIC_LABELS), getSettings().topic, (v) => saveSettings({ topic: v }));
+
+// News topics as a row of buttons, so every topic is visible at a glance. They filter the headlines already fetched (every fetch
+// covers all topics), so picking one is instant and contacts nothing. The choice is remembered; "All topics" is the default.
+export function topicPicker(onChange) {
+  const current = getSettings().topic;
+  const group = h("div", { class: "chips", role: "radiogroup", "aria-label": "News topic" });
+  for (const [key, label] of Object.entries(TOPIC_LABELS)) {
+    const on = key === current;
+    const b = h("button", { type: "button", class: `chip${on ? " active" : ""}`, role: "radio", "aria-checked": String(on), title: key === "all" ? "Headlines from every topic" : `Only ${label.toLowerCase()} headlines` }, label);
+    b.addEventListener("click", () => {
+      saveSettings({ topic: key, topicChosen: true });
+      for (const c of group.children) { c.classList.toggle("active", c === b); c.setAttribute("aria-checked", String(c === b)); }
+      onChange(key);
+    });
+    group.append(b);
+  }
+  return h("div", { class: "topic-picker" }, h("span", { class: "topic-label" }, "Topic"), group);
+}
 
 export function epssCheck() {
   const i = h("input", { type: "checkbox" });
