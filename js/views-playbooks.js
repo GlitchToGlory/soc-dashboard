@@ -2,13 +2,15 @@ import { h, copyBtn, download, store } from "./ui.js";
 import { PLAYBOOKS } from "./playbooks.js";
 
 const key = (id) => `playbook.${id}`;
+// Listed A–Z by title (the steps inside each playbook keep their order).
+const SORTED = [...PLAYBOOKS].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
 const getDone = (id) => new Set(store.get(key(id), []));
 
 export function renderPlaybooks(parts) {
-  const sel = PLAYBOOKS.find((p) => p.id === parts[1]) || PLAYBOOKS[0];
+  const sel = SORTED.find((p) => p.id === parts[1]) || SORTED[0];
   const side = h("nav", { class: "tpl-list card", "aria-label": "Playbooks" },
     h("h3", {}, "Playbooks"),
-    PLAYBOOKS.map((p) => {
+    SORTED.map((p) => {
       const total = p.phases.reduce((n, [, s]) => n + s.length, 0), done = getDone(p.id).size;
       return h("a", { href: `#/playbooks/${p.id}`, class: p.id === sel.id ? "active" : "" }, p.title, done ? h("span", { class: "small" }, `  ${done}/${total}`) : null);
     }));

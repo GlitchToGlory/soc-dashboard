@@ -6,8 +6,12 @@ import { placeholdersOf, fillTemplate, fmtUTC } from "./lib.js";
 const SHORT = new Set(["date_utc", "analyst", "ticket_id", "severity", "status", "cve_id", "incident_id", "host", "user", "subject", "cvss", "epss", "in_kev"]);
 const pretty = (k) => k.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
+const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+
+// Groups A–Z, and templates A–Z within each group, so the sidebar (and the default selection, list[0]) follow that order.
 function allTemplates() {
-  return [...TEMPLATES, ...store.get("customTemplates", []).map((t) => ({ ...t, group: "My templates", custom: true }))];
+  return [...TEMPLATES, ...store.get("customTemplates", []).map((t) => ({ ...t, group: "My templates", custom: true }))]
+    .sort((a, b) => byName(a.group, b.group) || byName(a.title, b.title));
 }
 
 export function renderTemplates(parts) {
