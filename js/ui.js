@@ -105,5 +105,5 @@ export function download(filename, text, type = "text/markdown") {
   document.body.append(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);   // generous: slow mobile browsers can still be reading it after 1s
 }

@@ -57,7 +57,9 @@ export function sleep(ms, signal) {
 
 /**
  * GET a URL with the safety limits above.
- * as: "json" (default) | "text" | "bytes"   — fetchImpl / maxBytes / timeoutMs are overridable (tests, big downloads)
+ * as: "json" (default) | "text" | "bytes" | "chunks"   — fetchImpl / maxBytes / timeoutMs are overridable (tests, big downloads)
+ * Memory: "json" / "text" decode each piece as it arrives and keep no copy of the raw bytes; "chunks" returns the pieces as they
+ * came (no joined copy) so a big download can be handed to a worker; only "bytes" builds one contiguous buffer.
  */
 export async function fetchLimited(url, { maxBytes = 8_000_000, timeoutMs = 30_000, signal, onProgress, as = "json", fetchImpl, headers } = {}) {
   assertAllowed(url);
@@ -85,31 +87,40 @@ export async function fetchLimited(url, { maxBytes = 8_000_000, timeoutMs = 30_0
       throw new FetchError("toolarge", `Response is larger than the ${Math.round(maxBytes / 1e6)} MB limit`);
     }
     const total = Number.isFinite(len) ? len : 0;
-    let buf;
+    const tooLarge = () => new FetchError("toolarge", `Response is larger than the ${Math.round(maxBytes / 1e6)} MB limit`);
+    const decode = as === "json" || as === "text";
+    const decoder = decode ? new TextDecoder("utf-8") : null;
+    const chunks = [], texts = [];
+    let got = 0;
     try {
       if (!res.body) {
         const ab = new Uint8Array(await res.arrayBuffer());
-        if (ab.byteLength > maxBytes) throw new FetchError("toolarge", `Response is larger than the ${Math.round(maxBytes / 1e6)} MB limit`);
-        buf = ab;
+        if (ab.byteLength > maxBytes) throw tooLarge();
+        got = ab.byteLength;
+        if (decode) texts.push(decoder.decode(ab)); else chunks.push(ab);
       } else {
         const reader = res.body.getReader();
-        const chunks = [];
-        let got = 0;
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
           got += value.byteLength;
-          if (got > maxBytes) { ctl.abort(); throw new FetchError("toolarge", `Response is larger than the ${Math.round(maxBytes / 1e6)} MB limit`); }
-          chunks.push(value);
+          if (got > maxBytes) { ctl.abort(); throw tooLarge(); }
+          if (decode) texts.push(decoder.decode(value, { stream: true })); else chunks.push(value);
           if (onProgress) onProgress(got, total);
         }
-        buf = new Uint8Array(got);
-        let o = 0;
-        for (const c of chunks) { buf.set(c, o); o += c.byteLength; }
+        if (decode) texts.push(decoder.decode());
       }
     } catch (e) { throw classify(e, timedOut, signal); }
-    if (as === "bytes") return buf;
-    const text = new TextDecoder("utf-8").decode(buf);
+    if (as === "chunks") return chunks;
+    if (as === "bytes") {
+      if (chunks.length === 1) return chunks[0];
+      const buf = new Uint8Array(got);
+      let o = 0;
+      for (const c of chunks) { buf.set(c, o); o += c.byteLength; }
+      return buf;
+    }
+    const text = texts.join("");
+    texts.length = 0;
     if (as === "text") return text;
     try { return JSON.parse(text); } catch { throw new FetchError("format", "The response was not valid JSON"); }
   } finally {

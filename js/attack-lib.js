@@ -57,7 +57,16 @@ export function searchAttack(data, query, { platform = "all", limit = 40 } = {})
   return out;
 }
 
-// Find techniques mentioned in free text: explicit T-IDs plus exact technique names.
+// Find techniques mentioned in free text: explicit T-IDs plus exact technique names (as whole words).
+// Plain indexOf with a manual word-boundary check: no per-technique RegExp to compile, and no lookbehind (Safari < 16.4 lacks it).
+const isWordChar = (c) => (c >= 97 && c <= 122) || (c >= 48 && c <= 57);   // a-z, 0-9 (text is lower-cased first)
+function hasWord(low, word) {
+  for (let i = low.indexOf(word); i !== -1; i = low.indexOf(word, i + 1)) {
+    const before = i === 0 ? -1 : low.charCodeAt(i - 1), after = low.charCodeAt(i + word.length);
+    if (!isWordChar(before) && !isWordChar(after)) return true;
+  }
+  return false;
+}
 export function findTechniquesInText(data, text) {
   text = String(text ?? "").slice(0, 500_000);
   const found = new Map();
@@ -65,15 +74,16 @@ export function findTechniquesInText(data, text) {
   const low = text.toLowerCase();
   for (const t of Object.values(data.techniques)) {
     if (found.has(t.id) || t.name.length < 7) continue;
-    const re = new RegExp(`(?<![a-z0-9])${t.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![a-z0-9])`);
-    if (re.test(low)) found.set(t.id, "name");
+    if (hasWord(low, t.name.toLowerCase())) found.set(t.id, "name");
   }
   return [...found].map(([id, how]) => ({ id, how, t: data.techniques[id] }));
 }
 
+const tacticIndex = new WeakMap();   // one short-name -> name map per loaded dataset, instead of one per call
 export function tacticNames(data, t) {
-  const byShort = Object.fromEntries(data.tactics.map((x) => [x.short, x.name]));
-  return (t.tactics || []).map((s) => byShort[s] || s);
+  let byShort = tacticIndex.get(data);
+  if (!byShort) { byShort = new Map(data.tactics.map((x) => [x.short, x.name])); tacticIndex.set(data, byShort); }
+  return (t.tactics || []).map((s) => byShort.get(s) || s);
 }
 
 export function navigatorLayer(data, ids, name = "SOC dashboard selection") {

@@ -4,6 +4,14 @@ import { fmtUTC, timeAgo, matchesWatchlist, SEV_ORDER } from "./lib.js";
 import { taskButton, daysSelect, topicSelect, epssCheck, fetchedLine, getStarted } from "./live-ui.js";
 
 const pct = (x) => (x * 100).toFixed(1) + "%";
+// Plain string order for ISO dates / IDs: much cheaper than localeCompare on every keystroke, and identical for these values.
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+// Lower-cased search text, built once per record and reused on every keystroke (released with the record when data is refetched).
+const hayCache = new WeakMap();
+const hay = (o, build) => { let s = hayCache.get(o); if (s === undefined) { s = build(o).toLowerCase(); hayCache.set(o, s); } return s; };
+const cveHay = (c) => `${c.id} ${c.desc} ${(c.products || []).join(" ")} ${(c.cwes || []).join(" ")}`;
+const kevHay = (k) => `${k.id} ${k.vendor} ${k.product} ${k.name} ${k.desc}`;
+const sevRank = (s) => SEV_ORDER[s] ?? -1;
 const isKev = (c) => c.kev || state.kevSet.has(c.id);
 
 function sevBadge(c) {
@@ -168,7 +176,7 @@ export function renderCves() {
     const f = cveFilter;
     const q = f.q.trim().toLowerCase();
     let items = state.cves.filter((c) => {
-      if (q && !(`${c.id} ${c.desc} ${(c.products || []).join(" ")} ${(c.cwes || []).join(" ")}`.toLowerCase().includes(q))) return false;
+      if (q && !hay(c, cveHay).includes(q)) return false;
       if (f.sev !== "all") { if (f.sev === "unrated" ? c.sev : c.sev !== f.sev.toUpperCase()) return false; }
       if (f.kev && !isKev(c)) return false;
       if (Number(f.epss) > 0 && !((c.epss || 0) >= Number(f.epss))) return false;
@@ -177,8 +185,8 @@ export function renderCves() {
       return true;
     });
     const sorters = {
-      new: (a, b) => b.published.localeCompare(a.published),
-      cvss: (a, b) => (b.cvss ?? -1) - (a.cvss ?? -1) || (SEV_ORDER[b.sev] - SEV_ORDER[a.sev]),
+      new: (a, b) => cmp(b.published, a.published),
+      cvss: (a, b) => (b.cvss ?? -1) - (a.cvss ?? -1) || (sevRank(b.sev) - sevRank(a.sev)),
       epss: (a, b) => (b.epss ?? -1) - (a.epss ?? -1),
     };
     items = items.sort(sorters[f.sort]);
@@ -212,11 +220,11 @@ export function renderKev() {
   const update = () => {
     const f = kevFilter, q = f.q.trim().toLowerCase();
     const items = state.kev.filter((k) => {
-      if (q && !`${k.id} ${k.vendor} ${k.product} ${k.name} ${k.desc}`.toLowerCase().includes(q)) return false;
+      if (q && !hay(k, kevHay).includes(q)) return false;
       if (f.ransom && (k.ransomware || "").toLowerCase() !== "known") return false;
       if (f.days !== "all" && state.ref - Date.parse(k.added + "T00:00:00Z") > Number(f.days) * 86400e3) return false;
       return true;
-    }).sort(f.sort === "due" ? (a, b) => (b.due || "").localeCompare(a.due || "") : (a, b) => b.added.localeCompare(a.added));
+    }).sort(f.sort === "due" ? (a, b) => cmp(b.due || "", a.due || "") : (a, b) => cmp(b.added, a.added));
     results.replaceChildren(h("p", { class: "muted small" }, `${items.length} of ${state.kev.length} entries`), pagedList(items, kevItem));
   };
   const search = h("input", { type: "search", placeholder: "CVE ID, vendor, product…", value: kevFilter.q, "aria-label": "Search KEV" });

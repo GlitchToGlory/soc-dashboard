@@ -4,7 +4,7 @@ import { cleanCves, cleanKev, cleanNews, cleanAttack } from "./sanitize.js";
 
 export const state = {
   cves: [], kev: [], news: [],
-  meta: { fetched: {}, via: {}, note: {} },      // when / where each dataset came from
+  meta: { fetched: {}, via: {}, note: {}, days: 0, topic: "" },   // when / where each dataset came from
   kevSet: new Set(),
   ref: Date.now(),                                // "now" for freshness windows
   prefill: null,                                  // {id, values} handed from a CVE to the Templates page
@@ -21,21 +21,29 @@ export function setWatch(words) {
 
 const rec = (r) => (r && typeof r === "object" ? r : null);
 
-export async function loadAll() {
-  const [c, k, n] = await Promise.all([kvGet("cves").catch(() => null), kvGet("kev").catch(() => null), kvGet("news").catch(() => null)]);
-  const C = rec(c), K = rec(k), N = rec(n);
-  state.cves = cleanCves(C && C.data);
-  state.kev = cleanKev(K && K.data && K.data.items);
-  state.news = cleanNews(N && N.data);
-  state.kevSet = new Set(state.kev.map((x) => x.id));
-  const ts = (r) => (r && Number.isFinite(r.savedAt) ? r.savedAt : 0);
-  const txt = (v, m) => (typeof v === "string" ? v.slice(0, m) : "");
-  state.meta = {
-    fetched: { cves: ts(C), kev: ts(K), news: ts(N) },
-    via: { cves: txt(C && C.via, 60), kev: txt(K && K.via, 60), news: txt(N && N.via, 60) },
-    note: { cves: txt(C && C.note, 400) },
-    days: C && Number.isFinite(C.days) ? C.days : 0, topic: txt(N && N.topic, 30),
-  };
+const ts = (r) => (r && Number.isFinite(r.savedAt) ? r.savedAt : 0);
+const txt = (v, m) => (typeof v === "string" ? v.slice(0, m) : "");
+
+// Reads the stored feeds back into `state`. Pass the keys that just changed (e.g. ["kev"] after a KEV fetch) so the other
+// datasets aren't read and re-checked again for nothing; with no argument everything is (re)loaded.
+export async function loadAll(keys = ["cves", "kev", "news"]) {
+  const want = new Set(keys);
+  const [C, K, N] = (await Promise.all(["cves", "kev", "news"].map((k) => (want.has(k) ? kvGet(k).catch(() => null) : null)))).map(rec);
+  const m = state.meta;
+  if (want.has("cves")) {
+    state.cves = cleanCves(C && C.data);
+    m.fetched.cves = ts(C); m.via.cves = txt(C && C.via, 60); m.note.cves = txt(C && C.note, 400);
+    m.days = C && Number.isFinite(C.days) ? C.days : 0;
+  }
+  if (want.has("kev")) {
+    state.kev = cleanKev(K && K.data && K.data.items);
+    state.kevSet = new Set(state.kev.map((x) => x.id));
+    m.fetched.kev = ts(K); m.via.kev = txt(K && K.via, 60);
+  }
+  if (want.has("news")) {
+    state.news = cleanNews(N && N.data);
+    m.fetched.news = ts(N); m.via.news = txt(N && N.via, 60); m.topic = txt(N && N.topic, 30);
+  }
   state.ref = Date.now();
   state.persistent = storage.persistent;
 }
