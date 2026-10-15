@@ -51,6 +51,8 @@ body.nav-collapsed .sidebar .lbl { display: none; }
 
 main { max-width: 1240px; margin: 0 auto; padding: 1rem; outline: none; }
 .foot { max-width: 1240px; margin: 0 auto; padding: 1rem 1rem 2rem; border-top: 1px solid var(--border); }
+/* The ATT&CK matrix has 14+ columns, so its tab uses the whole width beside the sidebar instead of the 1240px reading column. */
+body[data-wide="1"] main, body[data-wide="1"] .foot { max-width: none; padding-left: 1.5rem; padding-right: 1.5rem; }
 
 .banner { padding: .55rem 1rem; background: #4a3205; color: #fde68a; border-bottom: 1px solid #7a5410; font-size: .9rem; }
 :root[data-theme="light"] .banner { background: #fff3cd; color: #664d03; border-color: #ffe08a; }
@@ -154,10 +156,10 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
    always scroll the same distance. The matrix's own bottom scroll bar is hidden: the bar above the tactic headings replaces it. */
 .mx-wrap { --mx-col: 190px; --mx-gap: .5rem; }
 .mx-top { display: flex; gap: var(--mx-gap); overflow-x: auto; overflow-y: hidden; margin-bottom: .35rem; }
-.mx-top > span { flex: 0 0 var(--mx-col); min-width: var(--mx-col); height: 1px; }
+.mx-top > span { flex: 1 0 var(--mx-col); min-width: var(--mx-col); height: 1px; }
 .matrix { display: flex; gap: var(--mx-gap); overflow-x: auto; padding-bottom: .75rem; align-items: flex-start; scrollbar-width: none; }
 .matrix::-webkit-scrollbar { display: none; }
-.mx-col { flex: 0 0 var(--mx-col); min-width: var(--mx-col); }
+.mx-col { flex: 1 0 var(--mx-col); min-width: var(--mx-col); }
 .mx-head { position: sticky; top: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; padding: .4rem .5rem; border-radius: 6px; margin-bottom: .35rem; font-size: .85rem; }
 .mx-head .small { color: inherit; opacity: .8; font-weight: 500; }
 .mx-cell { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: .3rem .4rem; margin-bottom: .3rem; font-size: .8rem; }
