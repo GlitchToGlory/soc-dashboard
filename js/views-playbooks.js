@@ -1,10 +1,10 @@
-import { h, copyBtn, download, store } from "./ui.js";
+import { h, copyBtn, download, store, read } from "./ui.js";
 import { PLAYBOOKS } from "./playbooks.js";
 
 const key = (id) => `playbook.${id}`;
 // Listed A–Z by title (the steps inside each playbook keep their order).
 const SORTED = [...PLAYBOOKS].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
-const getDone = (id) => new Set(store.get(key(id), []));
+const getDone = (id) => new Set(read.strs(key(id), { max: 500, len: 1000 }));
 
 export function renderPlaybooks(parts) {
   const sel = SORTED.find((p) => p.id === parts[1]) || SORTED[0];

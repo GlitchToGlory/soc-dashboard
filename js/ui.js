@@ -42,6 +42,21 @@ export const store = {
   del(k) { try { localStorage.removeItem("soc." + k); } catch { /* ignore */ } },
 };
 
+// Values read back from localStorage are untrusted like everything else in browser storage: they may be corrupt, and on
+// <user>.github.io every other Pages site of the same account can write them. Each reader checks the shape it expects and
+// falls back to a safe default, so a bad value can't break a page.
+export const read = {
+  bool: (k, d = false) => { const v = store.get(k, d); return typeof v === "boolean" ? v : d; },
+  str: (k, max = 200, d = "") => { const v = store.get(k, d); return typeof v === "string" ? v.slice(0, max) : d; },
+  oneOf: (k, allowed, d) => { const v = store.get(k, d); return allowed.includes(v) ? v : d; },
+  strs: (k, { max = 1000, len = 200, test } = {}) => {
+    const v = store.get(k, []);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.length <= len && (!test || test(x))).slice(0, max) : [];
+  },
+  obj: (k) => { const v = store.get(k, null); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; },
+  objs: (k, max = 500) => { const v = store.get(k, []); return Array.isArray(v) ? v.filter((x) => x && typeof x === "object" && !Array.isArray(x)).slice(0, max) : []; },
+};
+
 export function copyBtn(getText, label = "Copy") {
   const b = h("button", { class: "btn sm", type: "button" }, label);
   b.addEventListener("click", async () => {

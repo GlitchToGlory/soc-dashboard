@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- connect-src lists exactly the hosts in js/net.js (a test keeps the two in sync). No inline script/style, no eval. -->
+  <!-- connect-src lists exactly the hosts in js/net.js (a test keeps the two in sync). No inline script/style, no eval.
+       Trusted Types: HTML-injection sinks are blocked and script URLs must pass the "soc" policy in js/trusted.js. -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://services.nvd.nist.gov https://vulnerability.circl.lu https://raw.githubusercontent.com https://api.first.org https://hn.algolia.com; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; media-src 'none'; base-uri 'self'; form-action 'none'">
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://services.nvd.nist.gov https://vulnerability.circl.lu https://raw.githubusercontent.com https://api.first.org https://hn.algolia.com; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; media-src 'none'; base-uri 'self'; form-action 'none'; require-trusted-types-for 'script'; trusted-types soc">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0b1220">
@@ -17,6 +18,7 @@
   <link rel="stylesheet" href="css/styles.css">
   <!-- The landing page's code is fetched in parallel instead of discovered one level at a time. Other pages load on demand. -->
   <link rel="modulepreload" href="js/app.js">
+  <link rel="modulepreload" href="js/trusted.js">
   <link rel="modulepreload" href="js/ui.js">
   <link rel="modulepreload" href="js/lib.js">
   <link rel="modulepreload" href="js/state.js">

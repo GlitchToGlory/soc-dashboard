@@ -1,5 +1,5 @@
 // One-at-a-time, cancellable background jobs started by buttons. The UI listens through onStatus().
-import { store } from "./ui.js";
+import { store, read } from "./ui.js";
 import { describeError } from "./net.js";
 import { fetchLatestCves, fetchKev, fetchNews, downloadAttack, TOPICS } from "./live.js";
 import { loadAll, loadAttack } from "./state.js";
@@ -8,7 +8,7 @@ import { own } from "./lib.js";
 export const DAY_CHOICES = [1, 3, 7, 14, 30];
 
 export function getSettings() {
-  const s = store.get("settings", {}) || {};
+  const s = read.obj("settings");
   return { days: DAY_CHOICES.includes(s.days) ? s.days : 3, epss: s.epss !== false, topic: own(TOPICS, s.topic) ? s.topic : "vulnerabilities" };
 }
 export function saveSettings(patch) { store.set("settings", { ...getSettings(), ...patch }); }

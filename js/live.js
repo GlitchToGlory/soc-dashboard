@@ -4,6 +4,7 @@ import { fetchLimited, sleep, FetchError, describeError, probeSource, SOURCES, N
 import { nvdToCves, cve5ToCve, kevFromJson, mergeEpss, hnToNews, CVE_ID } from "./convert.js";
 import { kvSet } from "./store.js";
 import { own } from "./lib.js";
+import { scriptURL } from "./trusted.js";
 
 export const TOPICS = { vulnerabilities: "vulnerability", cve: "CVE", ransomware: "ransomware", zeroday: "zero-day", breach: "data breach", malware: "malware", phishing: "phishing" };
 export const TOPIC_LABELS = { vulnerabilities: "Vulnerabilities", cve: "CVE mentions", ransomware: "Ransomware", zeroday: "Zero-days", breach: "Data breaches", malware: "Malware", phishing: "Phishing" };
@@ -151,7 +152,7 @@ export async function searchCves(keyword, { signal, fetchImpl } = {}) {
 }
 
 // ---------------------------------------------------------------- ATT&CK (one big download, built in a worker)
-const defaultWorker = () => new Worker(new URL("./attack-worker.js", import.meta.url), { type: "module" });
+const defaultWorker = () => new Worker(scriptURL(new URL("./attack-worker.js", import.meta.url)), { type: "module" });
 
 // `chunks`: the download as received (an array of Uint8Array). Each piece's memory is transferred to the worker, not copied.
 export function buildInWorker(chunks, { signal, workerFactory } = {}) {
