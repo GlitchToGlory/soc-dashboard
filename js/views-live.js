@@ -8,7 +8,7 @@ import { cveItem } from "./views-feed.js";
 import { kvClear, storage } from "./store.js";
 import { store, read } from "./ui.js";
 import { getSettings } from "./tasks.js";
-import { daysSelect, topicSelect, epssCheck } from "./live-ui.js";
+import { daysSelect, epssCheck } from "./live-ui.js";
 
 const CVE_ID = /^CVE-\d{4}-\d{4,7}$/;
 const msg = (e) => String((e && e.message) || e).slice(0, 500);
@@ -134,7 +134,7 @@ export function renderSources() {
     h("p", { class: "muted small" }, "A web page may only read another website if that site allows it (CORS), and not every service does. Press the button to find out which services your browser can read. The app adapts: anything blocked is skipped with a clear message, and every other page keeps working."),
     h("div", { class: "row" }, test), status, body,
     h("section", { class: "card" }, h("h2", {}, "Fetch settings"),
-      h("div", { class: "row" }, field("CVE window", daysSelect()), field("Headline topic", topicSelect()), epssCheck())),
+      h("div", { class: "row" }, field("CVE window", daysSelect()), epssCheck())),
     h("section", { class: "card" }, h("h2", {}, "Stored data"), storageLine, h("div", { class: "row" }, persist, clear)),
     h("section", { class: "card" }, h("h2", {}, "Privacy"),
       h("ul", { class: "small" },

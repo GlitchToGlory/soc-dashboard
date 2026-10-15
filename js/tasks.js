@@ -1,7 +1,7 @@
 // One-at-a-time, cancellable background jobs started by buttons. The UI listens through onStatus().
 import { store, read } from "./ui.js";
 import { describeError } from "./net.js";
-import { fetchLatestCves, fetchKev, fetchNews, downloadAttack, TOPICS } from "./live.js";
+import { fetchLatestCves, fetchKev, fetchNews, downloadAttack, TOPIC_LABELS } from "./live.js";
 import { loadAll, loadAttack } from "./state.js";
 import { own } from "./lib.js";
 
@@ -9,7 +9,10 @@ export const DAY_CHOICES = [1, 3, 7, 14, 30];
 
 export function getSettings() {
   const s = read.obj("settings");
-  return { days: DAY_CHOICES.includes(s.days) ? s.days : 3, epss: s.epss !== false, topic: own(TOPICS, s.topic) ? s.topic : "vulnerabilities" };
+  // A topic is only remembered once it has been picked from the topic menu (topicChosen). Saving any other setting used to store the
+  // old default ("vulnerabilities") too, so without this flag those users would never get the "All topics" default.
+  const topicChosen = s.topicChosen === true && own(TOPIC_LABELS, s.topic);
+  return { days: DAY_CHOICES.includes(s.days) ? s.days : 3, epss: s.epss !== false, topic: topicChosen ? s.topic : "all", topicChosen };
 }
 export function saveSettings(patch) { store.set("settings", { ...getSettings(), ...patch }); }
 
@@ -35,7 +38,7 @@ export async function runTask(name, overrides = {}) {
   try {
     if (name === "kev" || name === "update") { progress("Fetching the CISA KEV catalogue…"); const r = await fetchKev({ signal }); parts.push(`${r.count} KEV ${r.count === 1 ? "entry" : "entries"}`); await loadAll(["kev"]); }
     if (name === "cves" || name === "update") { const r = await fetchLatestCves({ days: s.days, epss: s.epss, signal, onProgress: progress }); parts.push(`${pluralise(r.count, "new CVE")}${r.note ? ` — ${r.note.replace(/\.$/, "")}` : ""}`); await loadAll(["cves"]); }
-    if (name === "news" || name === "update") { progress("Fetching headlines…"); const r = await fetchNews({ topic: s.topic, signal }); parts.push(pluralise(r.count, "headline")); await loadAll(["news"]); }
+    if (name === "news" || name === "update") { progress("Fetching headlines…"); const r = await fetchNews({ signal }); parts.push(`${pluralise(r.count, "headline")}${r.note ? ` — ${r.note}` : ""}`); await loadAll(["news"]); }
     if (name === "attack") { const r = await downloadAttack({ signal, onProgress: progress }); parts.push(`ATT&CK v${r.version || "?"}: ${pluralise(r.techniques, "technique")}`); await loadAttack(true); }
     const result = { ok: true, name, message: `Done — ${parts.join("; ")}.` };
     emit({ running: false, ...result });

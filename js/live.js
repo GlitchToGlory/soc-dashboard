@@ -7,7 +7,8 @@ import { own } from "./lib.js";
 import { scriptURL } from "./trusted.js";
 
 export const TOPICS = { vulnerabilities: "vulnerability", cve: "CVE", ransomware: "ransomware", zeroday: "zero-day", breach: "data breach", malware: "malware", phishing: "phishing" };
-export const TOPIC_LABELS = { vulnerabilities: "Vulnerabilities", cve: "CVE mentions", ransomware: "Ransomware", zeroday: "Zero-days", breach: "Data breaches", malware: "Malware", phishing: "Phishing" };
+// Topic filters on the News page; "all" (the default) shows every headline.
+export const TOPIC_LABELS = { all: "All topics", vulnerabilities: "Vulnerabilities", cve: "CVE mentions", ransomware: "Ransomware", zeroday: "Zero-days", breach: "Data breaches", malware: "Malware", phishing: "Phishing" };
 
 const NVD_PAGE = 1000, NVD_MAX_PAGES = 6, NVD_GAP_MS = 6500, KEEP = 1500, EPSS_BATCH = 90;
 const noop = () => {};
@@ -84,15 +85,36 @@ export async function fetchKev({ signal, fetchImpl } = {}) {
 }
 
 // ---------------------------------------------------------------- news
-export async function fetchNews({ topic = "vulnerabilities", signal, fetchImpl } = {}) {
-  const query = own(TOPICS, topic) ? TOPICS[topic] : TOPICS.vulnerabilities;
-  const q = new URLSearchParams({ query, tags: "story", hitsPerPage: "50", numericFilters: "points>2" });
-  let json;
-  try { json = await fetchLimited(`${HN_URL}?${q}`, { maxBytes: 3_000_000, timeoutMs: 20_000, signal, fetchImpl }); }
-  catch (e) { rethrowCancel(e); throw wrap(e, "Hacker News search"); }
-  const data = hnToNews(json);
-  await kvSet("news", { savedAt: Date.now(), via: "Hacker News", topic, data });
-  return { count: data.length };
+// Headlines: one search per topic, run side by side and merged, so every fetch covers all topics. Each headline is tagged with
+// the topics whose search found it; the News page's topic buttons filter on those tags without fetching again, and the
+// Overview always shows the newest across all topics. (The search service's own match-any-word option can't be used: it would
+// split "data breach" into "data" OR "breach" and match almost everything.)
+export async function fetchNews({ signal, fetchImpl } = {}) {
+  const keys = Object.keys(TOPICS);
+  const search = async (key) => {
+    // Headline matches only, no typo tolerance: otherwise words found in a story's link or text (or near-misses) pull in
+    // unrelated stories – "data breach" matched "Apple Plans to Block…" and startup launch posts.
+    const q = new URLSearchParams({ query: TOPICS[key], tags: "story", hitsPerPage: "50", numericFilters: "points>2", restrictSearchableAttributes: "title", typoTolerance: "false" });
+    return hnToNews(await fetchLimited(`${HN_URL}?${q}`, { maxBytes: 3_000_000, timeoutMs: 20_000, signal, fetchImpl }));
+  };
+  const results = await Promise.allSettled(keys.map(search));
+  for (const r of results) if (r.status === "rejected") rethrowCancel(r.reason);
+  if (!results.some((r) => r.status === "fulfilled")) throw wrap(results[0].reason, "Hacker News search");
+  const byLink = new Map();
+  results.forEach((r, i) => {
+    if (r.status !== "fulfilled") return;
+    for (const n of r.value) {
+      const k = n.link.toLowerCase();
+      const have = byLink.get(k);
+      if (have) { if (!have.topics.includes(keys[i])) have.topics.push(keys[i]); }
+      else byLink.set(k, { ...n, topics: [keys[i]] });
+    }
+  });
+  const data = [...byLink.values()].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const missing = keys.filter((_, i) => results[i].status === "rejected").map((k) => TOPIC_LABELS[k]);
+  const note = missing.length ? `couldn't fetch ${missing.join(", ")}` : "";
+  await kvSet("news", { savedAt: Date.now(), via: "Hacker News", topic: "all", note, data });
+  return { count: data.length, note };
 }
 
 // ---------------------------------------------------------------- single CVE (NVD, then CIRCL) and bulk
