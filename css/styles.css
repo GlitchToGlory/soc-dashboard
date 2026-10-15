@@ -96,6 +96,8 @@ a.stat { color: inherit; display: block; } a.stat:hover { text-decoration: none;
 
 .toolbar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; margin-bottom: .75rem; }
 .toolbar label { display: flex; flex-direction: column; gap: .15rem; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+/* The small capitals are for the label text only: the search box and dropdowns inside it use the normal size, like every other field. */
+.toolbar label > input, .toolbar label > select { font-size: 15px; text-transform: none; letter-spacing: normal; color: var(--text); }
 label.check { display: flex; flex-direction: row; align-items: center; gap: .4rem; text-transform: none; font-size: .9rem; color: var(--text); }
 input[type="text"], input[type="search"], select, textarea { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .4rem .6rem; font: inherit; }
 input[type="search"], input[type="text"] { min-width: 220px; }
@@ -230,6 +232,6 @@ ol.plain li::before { counter-increment: hop; content: counter(hop) ". "; color:
 /* iPhone / iPad Safari zooms the whole page in when you tap a form field whose text is under 16px. Touch screens get 16px fields. */
 /* (:root raises the specificity above the field rules earlier in the file, e.g. input[type="search"], .quick, textarea.mono.) */
 @media (pointer: coarse) {
-  :root input, :root select, :root textarea { font-size: 16px; }
+  :root input, :root select, :root textarea, .toolbar label > input, .toolbar label > select { font-size: 16px; }
 }
 @media print { .topbar, .sidebar, .scrim, .foot, .toolbar, .actions, .btn, .live { display: none !important; } body { background: #fff; color: #000; } }
