@@ -1,4 +1,4 @@
-import { store } from "./ui.js";
+import { store, read } from "./ui.js";
 import { kvGet, storage } from "./store.js";
 import { cleanCves, cleanKev, cleanNews, cleanAttack } from "./sanitize.js";
 
@@ -8,7 +8,7 @@ export const state = {
   kevSet: new Set(),
   ref: Date.now(),                                // "now" for freshness windows
   prefill: null,                                  // {id, values} handed from a CVE to the Templates page
-  watch: store.get("watch", []),
+  watch: read.strs("watch", { max: 100, len: 100 }).map((w) => w.toLowerCase()).filter(Boolean),
   attack: null,                                   // loaded lazily (a few MB)
   attackState: "idle",                            // idle | loading | missing | ready
   attackMeta: null,

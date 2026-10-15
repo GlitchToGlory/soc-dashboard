@@ -6,7 +6,7 @@ import { runProbes } from "./live.js";
 import { extractIOCs, timeAgo } from "./lib.js";
 import { cveItem } from "./views-feed.js";
 import { kvClear, storage } from "./store.js";
-import { store } from "./ui.js";
+import { store, read } from "./ui.js";
 import { getSettings } from "./tasks.js";
 import { daysSelect, topicSelect, epssCheck } from "./live-ui.js";
 
@@ -88,7 +88,12 @@ const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true })
 const SOURCES_AZ = [...SOURCES].sort((a, b) => collator.compare(a.name, b.name));
 
 export function renderSources() {
-  const probes = store.get("probe", {}) || {};
+  // Stored test results, rebuilt from known source IDs only, with each field type-checked.
+  const saved = read.obj("probe"), probes = Object.create(null);
+  for (const s of SOURCES) {
+    const p = saved[s.id];
+    if (p && typeof p === "object" && Number.isFinite(p.at) && p.at > 0) probes[s.id] = { ok: p.ok === true, msg: typeof p.msg === "string" ? p.msg.slice(0, 200) : "", at: p.at };
+  }
   const status = h("p", { class: "small muted", "aria-live": "polite" });
   const body = h("div", {});
 

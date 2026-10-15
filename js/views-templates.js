@@ -1,4 +1,4 @@
-import { h, copyBtn, download, store, empty } from "./ui.js";
+import { h, copyBtn, download, store, read, empty } from "./ui.js";
 import { state } from "./state.js";
 import { TEMPLATES } from "./templates.js";
 import { placeholdersOf, fillTemplate, fmtUTC } from "./lib.js";
@@ -8,9 +8,16 @@ const pretty = (k) => k.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase
 
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
 
+// The user's own templates, checked on the way in (see `read` in ui.js): only the fields the app uses, with sane types and sizes.
+const CUSTOM_ID = /^custom-\d{1,16}$/;
+function myTemplates() {
+  return read.objs("customTemplates").filter((t) => typeof t.id === "string" && CUSTOM_ID.test(t.id) && typeof t.title === "string" && t.title.trim() && typeof t.body === "string")
+    .map((t) => ({ id: t.id, title: t.title.slice(0, 200), desc: "Custom template (saved in this browser)", body: t.body.slice(0, 200_000) }));
+}
+
 // Groups A–Z, and templates A–Z within each group, so the sidebar (and the default selection, list[0]) follow that order.
 function allTemplates() {
-  return [...TEMPLATES, ...store.get("customTemplates", []).map((t) => ({ ...t, group: "My templates", custom: true }))]
+  return [...TEMPLATES, ...myTemplates().map((t) => ({ ...t, group: "My templates", custom: true }))]
     .sort((a, b) => byName(a.group, b.group) || byName(a.title, b.title));
 }
 
@@ -36,7 +43,7 @@ function fillView(t) {
   const keys = placeholdersOf(t.body);
   const values = Object.create(null);   // no inherited keys such as "constructor"
   values.date_utc = fmtUTC(new Date().toISOString());
-  values.analyst = store.get("analyst", "");
+  values.analyst = read.str("analyst", 200);
   if (state.prefill && state.prefill.id === t.id) { Object.assign(values, state.prefill.values); state.prefill = null; }
   const out = h("pre", { class: "out" });
   const render = () => { out.textContent = fillTemplate(t.body, values); };
@@ -53,7 +60,7 @@ function fillView(t) {
     t.custom ? h("a", { class: "btn", href: `#/templates/edit/${t.id}` }, "Edit") : null,
     t.custom ? h("button", { class: "btn danger", type: "button", onclick: () => {
       if (!confirm(`Delete "${t.title}"?`)) return;
-      store.set("customTemplates", store.get("customTemplates", []).filter((x) => x.id !== t.id));
+      store.set("customTemplates", myTemplates().filter((x) => x.id !== t.id));
       location.hash = "#/templates";
     } }, "Delete") : null);
   return h("section", { class: "card" },
@@ -70,9 +77,9 @@ function editorForm(existing) {
   const msg = h("span", { class: "muted small" });
   const save = () => {
     if (!title.value.trim() || !body.value.trim()) { msg.textContent = "Add a name and some content first."; return; }
-    const mine = store.get("customTemplates", []);
+    const mine = myTemplates();
     const id = existing?.id || `custom-${Date.now()}`;
-    const rec = { id, title: title.value.trim(), desc: "Custom template (saved in this browser)", body: body.value };
+    const rec = { id, title: title.value.trim().slice(0, 200), desc: "Custom template (saved in this browser)", body: body.value.slice(0, 200_000) };
     store.set("customTemplates", existing ? mine.map((t) => (t.id === id ? rec : t)) : [...mine, rec]);
     location.hash = `#/templates/${id}`;
   };

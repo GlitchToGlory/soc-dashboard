@@ -7,18 +7,18 @@ the requests you trigger.
 | Risk | Defence |
 |---|---|
 | Script injection from feed text (CVE descriptions, headlines, ATT&CK text) | Every element is built with `createElement` + `textContent`, never from HTML strings. The element builder refuses `script/iframe/img/svg/style…` tags and `on*`/`style`/`src` attributes; links must be `http(s)`. The build-time tests checked that `innerHTML`, `eval`, inline handlers etc. do not appear. If you edit the code, keep it that way (see "Rules for future edits"). |
-| Injection even if the above slipped | Strict Content-Security-Policy: `script-src 'self'`, `object-src 'none'`, `frame-src 'none'`, `form-action 'none'`, `base-uri 'self'`, and `connect-src` limited to `'self'` + five named hosts (identical to the allow-list in `js/net.js`; keep them in sync). |
+| Injection even if the above slipped | Strict Content-Security-Policy: `script-src 'self'`, `object-src 'none'`, `frame-src 'none'`, `form-action 'none'`, `base-uri 'self'`, and `connect-src` limited to `'self'` + five named hosts (identical to the allow-list in `js/net.js`; keep them in sync). Plus **Trusted Types** (`require-trusted-types-for 'script'`): in Chrome and Edge every HTML-injection sink (`innerHTML`, `document.write`, inline handlers…) is refused outright, and a script URL is loaded only if the `soc` policy in `js/trusted.js` approves it – it approves exactly `sw.js` and `js/attack-worker.js`. |
 | Talking to the wrong place | `fetchLimited` only accepts HTTPS URLs on the allow-list (no ports, no credentials in URLs); requests carry no cookies (`credentials: omit`) and no referrer. |
 | Oversized / endless responses | Size is capped **while streaming** (8 MB default, 40 MB for NVD pages, 250 MB for the ATT&CK file), plus a time limit and cancel button. |
-| Corrupt or tampered stored data | Everything read back from browser storage is validated and coerced (types, lengths, ID formats, URL schemes) before any page sees it. |
+| Corrupt or tampered stored data | Everything read back from browser storage is validated and coerced (types, lengths, ID formats, URL schemes) before any page sees it: fetched data in IndexedDB by `js/sanitize.js`, and settings, watchlist, custom templates, ATT&CK selection, playbook ticks and source-test results in localStorage by the `read` helpers in `js/ui.js`. A bad value falls back to a default instead of breaking a page. |
 | Hostile text in the ATT&CK file | Parsed in a Web Worker; control/bidi characters stripped; regexes are bounded so 50,000 `[` characters can't stall it; output is validated (ID shapes, URLs, sanity thresholds) before it is stored. |
 | Link spoofing (bidi / zero-width characters, `user@host` URLs, `javascript:` / `data:` URLs) | Stripped or rejected when records are built and again when they are loaded. |
-| Prototype tricks (`{{constructor}}`, `__proto__` keys, `#/constructor`) | Null-prototype maps, `Object.hasOwn` routing and template filling, ID-shaped keys only. |
-| Browser freeze on pasted text | Bounded regexes and input size caps. |
+| Prototype tricks (`{{constructor}}`, `__proto__` keys, `#/constructor`) | Null-prototype maps, own-property checks (`own()` in `js/lib.js`) for routing and template filling, ID-shaped keys only. |
+| Browser freeze on pasted text | Bounded regexes and input size caps (including a 2,000-character cap on address headers in the email header analyser, whose matching would otherwise slow down with the square of the length). |
 | Clickjacking | The app refuses to run inside a frame. |
 | API-key leakage | No API keys are used or stored anywhere. |
 | Third-party code | None: no npm packages, CDN scripts, fonts or analytics. |
-| Service worker | Handles only same-origin GETs for the app's own files; never touches fetched data; cache is versioned by `BUILD` and installed bypassing the HTTP cache. |
+| Service worker | Handles only same-origin GETs for the app's own files; never touches fetched data; cache is versioned by `BUILD` and installed bypassing the HTTP cache and the CDN. On upgrade it deletes only its own older `soc-shell-*` caches, never the caches of other Pages sites on the shared origin. |
 
 ## What code can't fix
 * **The site is public** (free-plan GitHub Pages). It contains only generic content; keep anything internal out of the repository and out of templates.
@@ -34,4 +34,4 @@ the requests you trigger.
 4. Keep the repo free of private notes; review commits you didn't make.
 
 ## Rules for future edits
-Build DOM with `h()` and `textContent`; no inline scripts or handlers; no new hosts without adding them to both `js/net.js` and the CSP; add every new file to `SHELL_FILES` in `sw.js` and bump `BUILD`.
+Build DOM with `h()` and `textContent`; no inline scripts or handlers; no new hosts without adding them to both `js/net.js` and the CSP; read localStorage through `read.*` in `js/ui.js`, never `store.get` directly; a new worker or other script URL must be added to the allow-list in `js/trusted.js`; add every new file to `SHELL_FILES` in `sw.js` and bump `BUILD`.

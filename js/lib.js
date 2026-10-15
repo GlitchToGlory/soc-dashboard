@@ -161,7 +161,9 @@ export function parseHeaders(raw) {
     }
   }
   const all = (n) => headers.filter(([k]) => k.toLowerCase() === n.toLowerCase()).map(([, v]) => v);
-  const first = (n) => all(n)[0] || "";
+  // Address headers are capped before the regexes below: patterns such as [^<]*@[^<]* take time that grows with the SQUARE of the
+  // length on a value like 500 KB of "@", which froze the tab. Real address headers are far shorter than 2,000 characters.
+  const first = (n) => (all(n)[0] || "").slice(0, 2000);
   const addr = (v) => (v.match(/<([^>]+)>/)?.[1] || v.match(/[^\s<>"]+@[^\s<>"]+/)?.[0] || "").toLowerCase();
   const domain = (v) => (addr(v).split("@")[1] || "").toLowerCase();
 

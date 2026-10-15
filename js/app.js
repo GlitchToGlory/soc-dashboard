@@ -1,7 +1,8 @@
-import { h, store } from "./ui.js";
+import { h, store, read } from "./ui.js";
 import { state, loadAll } from "./state.js";
 import { onStatus, runTask, cancelTask } from "./tasks.js";
 import { timeAgo, own } from "./lib.js";
+import { scriptURL } from "./trusted.js";
 
 // Clickjacking guard (GitHub Pages can't send X-Frame-Options / frame-ancestors, so refuse to run inside someone else's frame).
 if (window.top !== window.self) {
@@ -108,7 +109,7 @@ async function quickLookup(raw) {
 }
 
 function applyTheme(t) { document.documentElement.dataset.theme = t; }
-applyTheme(store.get("theme", matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+applyTheme(read.oneOf("theme", ["light", "dark"], matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
 document.getElementById("theme").addEventListener("click", () => {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   applyTheme(next); store.set("theme", next);
@@ -126,7 +127,7 @@ function syncNavToggle() {
   scrim.hidden = !(narrow.matches && open);
 }
 function closeDrawer() { document.body.classList.remove("nav-open"); syncNavToggle(); }
-document.body.classList.toggle("nav-collapsed", store.get("navCollapsed", false));
+document.body.classList.toggle("nav-collapsed", read.bool("navCollapsed"));
 navToggle.addEventListener("click", () => {
   if (narrow.matches) document.body.classList.toggle("nav-open");
   else store.set("navCollapsed", document.body.classList.toggle("nav-collapsed"));
@@ -155,7 +156,8 @@ function registerServiceWorker() {
   let reloaded = false;
   // After an app update the new service worker takes over; reload once so the page and its cached modules are the same version.
   navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
-  navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker not registered:", e));
+  try { navigator.serviceWorker.register(scriptURL(new URL("sw.js", document.baseURI))).catch((e) => console.warn("Service worker not registered:", e)); }
+  catch (e) { console.warn("Service worker not registered:", e); }
 }
 if (document.readyState === "complete") setTimeout(registerServiceWorker, 0);
 else window.addEventListener("load", () => setTimeout(registerServiceWorker, 0), { once: true });

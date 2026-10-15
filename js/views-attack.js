@@ -1,12 +1,13 @@
-import { h, ext, badge, copyBtn, download, field, select, debounce, empty, store } from "./ui.js";
+import { h, ext, badge, copyBtn, download, field, select, debounce, empty, store, read } from "./ui.js";
 import { state, loadAttack } from "./state.js";
+import { ID } from "./sanitize.js";
 import { normaliseId, kindOf, lookup, searchAttack, findTechniquesInText, tacticNames, navigatorLayer, groupByTactic } from "./attack-lib.js";
 import { KQL } from "./kql.js";
 import { taskButton } from "./live-ui.js";
 import { timeAgo, own } from "./lib.js";
 
 export const atk = { q: "", platform: "all", subs: false };
-const marks = () => new Set(store.get("attackMarks", []));
+const marks = () => new Set(read.strs("attackMarks", { max: 5000, len: 12, test: (x) => ID.test(x) }));
 const saveMarks = (s) => store.set("attackMarks", [...s]);
 const href = (id) => `#/attack/${id}`;
 const link = (id, text) => h("a", { href: href(id) }, text || id);
