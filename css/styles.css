@@ -145,6 +145,9 @@ th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--
 th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; }
 .ioc-group { margin-top: .75rem; }
 .ioc-group li { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+/* URL analyser: findings read as sentences (badge then text), unwrapping steps as plain lines, and a divider between links. */
+.ioc-group li.url-flag, .url-result ol li { display: block; }
+.url-result + .url-result { border-top: 1px solid var(--border); padding-top: .75rem; margin-top: 1rem; }
 .empty { padding: 1.2rem; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
 .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .5rem 0; }
 .pre-wrap { white-space: pre-wrap; }

@@ -1,4 +1,5 @@
 import { h, ext, copyBtn, field, select, debounce, nodes } from "./ui.js";
+import { analyseText } from "./urltool.js";
 import { extractIOCs, defang, refang, b64decode, b64encode, hexdecode, hexencode, parseTimeInput, timeAgo, parseHeaders, cidrInfo, ipClass, decodeCvss } from "./lib.js";
 
 const enc = encodeURIComponent;
@@ -141,9 +142,65 @@ function cvssCard() {
   return h("section", { class: "card" }, h("h2", {}, "CVSS vector decoder"), h("p", { class: "small muted" }, "Paste a vector (shown in the CVE details) for a plain-English breakdown."), input, out);
 }
 
+function urlCard() {
+  const input = h("textarea", { rows: "4", maxlength: "100000", class: "mono", placeholder: "Paste a link, or several (one per line). Safe Links, Proofpoint and other wrapped links are unwrapped; defanged links (hxxp, [.]) work too.", "aria-label": "Links to analyse" });
+  const out = h("div", {});
+  const defangBox = h("input", { type: "checkbox" });
+  defangBox.checked = true;
+  let last = null;
+  const show = (v) => (defangBox.checked ? defang(v) : v);
+  const RISK = { high: ["High risk", "critical"], medium: ["Suspicious", "high"], low: ["No obvious red flags", "low"], error: ["Not a valid link", "unrated"] };
+  const LEVEL = { high: ["High", "critical"], medium: ["Check", "high"], info: ["Info", "unrated"] };
+  const table = (rows) => h("table", {}, h("tbody", {}, rows.map(([k, v]) => h("tr", {}, h("th", {}, k), h("td", {}, v)))));
+  const result = (r) => {
+    const [riskLabel, riskCls] = RISK[r.risk];
+    const p = r.parts;
+    const domain = p && p.domain;
+    const isIp = !!domain && /^(\d{1,3}\.){3}\d{1,3}$/.test(domain);
+    return h("div", { class: "ioc-group url-result" },
+      h("div", { class: "line" }, h("span", { class: `badge ${riskCls}` }, riskLabel), h("code", {}, show((p && (p.unicodeHost || p.host)) || r.final).slice(0, 200))),
+      r.error ? h("p", { class: "err small" }, r.error) : null,
+      r.flags.length ? h("ul", { class: "plain" }, r.flags.map((f) => h("li", { class: "url-flag" }, h("span", { class: `badge ${LEVEL[f.level][1]}` }, LEVEL[f.level][0]), " ", f.text)))
+        : (r.error ? null : h("p", { class: "small muted" }, "Nothing suspicious found by these checks. That isn't proof it's safe – check the domain's reputation too.")),
+      r.chain.length ? h("div", {}, h("h3", {}, "Unwrapping"), h("ol", { class: "plain small" },
+        r.chain.map((c) => h("li", {}, h("strong", {}, c.via), " ", h("code", {}, show(c.url).slice(0, 300)))),
+        h("li", {}, h("strong", {}, "Destination"), " ", h("code", {}, show(r.final).slice(0, 1000))))) : null,
+      p ? table([
+        ["Final link", h("code", {}, show(r.final).slice(0, 1000))],
+        domain ? ["Domain (approx.)", h("code", {}, show(domain))] : null,
+        p.unicodeHost ? ["Displays as", h("code", {}, show(p.unicodeHost))] : null,
+        p.host && p.host !== domain ? ["Full host", h("code", {}, show(p.host))] : null,
+        p.port ? ["Port", p.port] : null,
+        p.path && p.path !== "/" ? ["Path", h("code", {}, p.path)] : null,
+        p.fragment ? ["After # (fragment)", h("code", {}, p.fragment)] : null,
+      ].filter(Boolean)) : null,
+      r.params.length ? h("div", {}, h("h3", {}, `Query parameters (${r.params.length})`), table(r.params.map((x) => [x.name, [h("code", {}, x.value), x.decoded ? h("div", { class: "small muted" }, `base64 → ${x.decoded}`) : null]]))) : null,
+      h("div", { class: "actions" },
+        copyBtn(() => show(r.final), "Copy final link"),
+        domain ? copyBtn(() => show(domain), "Copy domain") : null,
+        domain ? ext(isIp ? `https://www.virustotal.com/gui/ip-address/${enc(domain)}` : `https://www.virustotal.com/gui/domain/${enc(domain)}`, "VT ↗", "btn sm") : null,
+        domain ? ext(isIp ? `https://urlscan.io/ip/${enc(domain)}` : `https://urlscan.io/domain/${enc(domain)}`, "urlscan ↗", "btn sm") : null));
+  };
+  const render = () => {
+    if (!last) return;
+    out.replaceChildren(...(last.length ? last.map(result) : [h("p", { class: "muted" }, "No links found.")]));
+  };
+  const run = () => { last = analyseText(input.value); render(); };
+  defangBox.addEventListener("change", render);
+  return h("section", { class: "card" },
+    h("h2", {}, "URL analyser & unwrapper"),
+    h("p", { class: "small muted" }, "Unwraps Microsoft Safe Links, Proofpoint, Barracuda and common redirects, then checks the real destination for phishing tricks: lookalike letters, disguised IPs, user@host, brand impersonation, shorteners, risky domains and more. Runs in your browser – the link is never opened. “VT” / “urlscan” send only the domain, and only when you select them."),
+    input,
+    h("div", { class: "row" },
+      h("button", { class: "btn primary", type: "button", onclick: run }, "Analyse"),
+      h("label", { class: "small" }, defangBox, " Show / copy results defanged")),
+    out);
+}
+
 export function renderToolkit() {
-  // Tools are listed A-Z by title: CIDR / IP range calculator, CVSS vector decoder, Decoder / encoder, Email header analyser, IOC extractor & defanger, Timestamp converter.
+  // Tools are listed A-Z by title: CIDR / IP range calculator, CVSS vector decoder, Decoder / encoder, Email header analyser, IOC extractor & defanger,
+  // Timestamp converter, URL analyser & unwrapper.
   // (In the two-column grid the order reads left to right, then down.) A new tool should be inserted in its alphabetical place.
   return h("div", {}, h("h1", {}, "Analyst toolkit"),
-    h("div", { class: "grid two" }, cidrCard(), cvssCard(), decoderCard(), headersCard(), iocCard(), timeCard()));
+    h("div", { class: "grid two" }, cidrCard(), cvssCard(), decoderCard(), headersCard(), iocCard(), timeCard(), urlCard()));
 }
