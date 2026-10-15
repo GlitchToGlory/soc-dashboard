@@ -25,6 +25,7 @@ const LOADERS = {
   playbooks: () => import("./views-playbooks.js").then((m) => m.renderPlaybooks),
   toolkit: () => import("./views-toolkit.js").then((m) => m.renderToolkit),
   reference: () => import("./views-reference.js").then((m) => m.renderReference),
+  about: () => import("./views-about.js").then((m) => m.renderAbout),
 };
 const DATA_ROUTES = new Set(["overview", "cves", "kev", "news", "lookup"]);                        // need the stored feed data
 const REDRAW_AFTER_TASK = new Set(["overview", "cves", "kev", "news", "attack", "sources"]);       // pages that show fetched data (never the ones with forms)

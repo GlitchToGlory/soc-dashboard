@@ -37,7 +37,10 @@ code { background: var(--panel2); padding: .05rem .35rem; border-radius: 5px; fo
 
 .shell { display: flex; align-items: flex-start; }
 .sidebar { position: sticky; top: var(--topbar-h); z-index: 20; flex: 0 0 var(--side-w); width: var(--side-w); height: calc(100vh - var(--topbar-h)); overflow-y: auto; overflow-x: hidden; background: var(--panel); border-right: 1px solid var(--border); padding: .5rem 0; transition: width .15s ease, flex-basis .15s ease; }
-.sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar { display: flex; flex-direction: column; }
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1 0 auto; }
+/* About sits at the very bottom of the menu, below a divider (it moves up under the other links if the menu is too short to fit). */
+.sidebar nav a.nav-bottom { margin-top: auto; border-top: 1px solid var(--border); height: 48px; }
 .sidebar nav a { position: relative; display: flex; align-items: center; gap: .85rem; height: 40px; padding: 0 1.1rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .sidebar nav a:hover { text-decoration: none; background: var(--panel2); color: var(--text); }
 .sidebar nav a.active { background: var(--panel2); color: var(--text); }
@@ -147,6 +150,15 @@ th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: u
 .ioc-group li { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
 /* URL analyser: findings read as sentences (badge then text), unwrapping steps as plain lines, and a divider between links. */
 .ioc-group li.url-flag, .url-result ol li { display: block; }
+/* About page */
+.about { max-width: 1000px; }
+.about-lead { font-size: 1.02rem; color: var(--muted); margin: 0 0 1rem; max-width: 75ch; }
+.about-highlight { border-color: var(--accent); }
+ul.about-points { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .55rem; }
+ul.about-points li { padding-left: 1.6rem; position: relative; }
+ul.about-points li::before { content: "✓"; position: absolute; left: .2rem; color: var(--low); font-weight: 800; }
+.about .card ul.small li { margin: .3rem 0; }
+.foot .credit { text-align: center; margin: 1.25rem 0 0; font-weight: 600; letter-spacing: .02em; }
 /* Timeline table: scrolls inside the card on narrow screens instead of widening the page; times never wrap mid-value. */
 .tl-wrap { overflow-x: auto; margin: .5rem 0; }
 .tl-wrap td:first-child, .tl-wrap td:nth-child(2) { white-space: nowrap; }
