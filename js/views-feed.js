@@ -126,8 +126,8 @@ export function renderOverview() {
   const stat = (n, l, cls = "", href = "") =>
     h(href ? "a" : "div", { class: `stat ${cls}`, href: href || null }, h("div", { class: "n" }, String(n)), h("div", { class: "l" }, l));
   const stats = h("div", { class: "stats" },
-    stat(cves.length, "CVEs fetched", "", "#/cves"), stat(crit, "Critical", "crit"), stat(high, "High", "high"),
-    stat(kevCves, "…also in KEV", "kev"), stat(kevNew.length, "KEV added (7d)", "kev", "#/kev"), stat(news24, "News (24h)", "", "#/news"));
+    stat(cves.length, "CVEs fetched", "", "#/cves/all"), stat(crit, "Critical", "crit", "#/cves/critical"), stat(high, "High", "high", "#/cves/high"),
+    stat(kevCves, "…also in KEV", "kev", "#/cves/kev"), stat(kevNew.length, "KEV added (7d)", "kev", "#/kev"), stat(news24, "News (24h)", "", "#/news"));
 
   const riskTop = [...cves].sort((a, b) => rank(b) - rank(a)).slice(0, 8);
   const input = h("input", { type: "text", placeholder: "e.g. fortinet, citrix, exchange, vmware", value: state.watch.join(", "), "aria-label": "Watchlist keywords" });
@@ -165,6 +165,14 @@ export function renderOverview() {
 
 // ------------------------------------------------------------------ CVEs
 export const cveFilter = { q: "", sev: "all", kev: false, epss: "0", watch: false, days: "all", sort: "new" };
+// Links such as #/cves/critical (the Overview tiles) open the list with just that filter, so it shows exactly what the tile counted.
+const PRESETS = { all: {}, critical: { sev: "critical" }, high: { sev: "high" }, kev: { kev: true } };
+function applyPreset(name) {
+  if (!Object.prototype.hasOwnProperty.call(PRESETS, name)) return;
+  Object.assign(cveFilter, { q: "", sev: "all", kev: false, epss: "0", watch: false, days: "all" }, PRESETS[name]);
+  // Back to plain #/cves without triggering another render, so a later reload or filter change isn't overridden by the preset.
+  try { history.replaceState(null, "", "#/cves"); } catch { /* ignore */ }
+}
 
 function chk(label, value, onchange) {
   const i = h("input", { type: "checkbox" });
@@ -173,7 +181,8 @@ function chk(label, value, onchange) {
   return h("label", { class: "check" }, i, label);
 }
 
-export function renderCves() {
+export function renderCves(parts = []) {
+  applyPreset(parts[1]);
   const results = h("div", {});
   const update = () => {
     const f = cveFilter;
