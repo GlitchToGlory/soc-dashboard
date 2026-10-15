@@ -65,8 +65,8 @@ function updateChrome() {
   const bits = [["KEV", f.kev], ["CVEs", f.cves], ["News", f.news]].filter(([, t]) => t).map(([n, t]) => `${n} ${timeAgo(t)}`);
   label.textContent = bits.length ? `Fetched: ${bits.join(" · ")}` : "";
   const msgs = [];
-  if (!bits.length) msgs.push("No data fetched yet. Nothing is downloaded until you press ↻ Update (or a Fetch button).");
-  else if (f.cves && Date.now() - f.cves > 3 * 86_400_000) msgs.push("The CVE list is more than 3 days old — press ↻ Update for the latest.");
+  if (!bits.length) msgs.push("No data fetched yet. Nothing is downloaded until you press ↻ Fetch all feeds (or a Fetch button on a page).");
+  else if (f.cves && Date.now() - f.cves > 3 * 86_400_000) msgs.push("The CVE list is more than 3 days old — press ↻ Fetch all feeds for the latest.");
   if (state.persistent === false) msgs.push("This browser blocked saving data, so fetched data is kept in memory for this session only.");
   banner.hidden = msgs.length === 0;
   banner.textContent = msgs.join(" ");
@@ -87,7 +87,7 @@ onStatus(async (s) => {
   live.classList.toggle("ok", s.running === false && s.ok === true);
   liveCancel.hidden = !s.running;
   document.body.dataset.busy = s.running ? "1" : "0";
-  refreshBtn.textContent = s.running ? "Fetching…" : "↻ Update";
+  refreshBtn.textContent = s.running ? "Fetching…" : "↻ Fetch all feeds";
   if (s.running === false) {
     updateChrome();
     if (REDRAW_AFTER_TASK.has(routeName())) await render();

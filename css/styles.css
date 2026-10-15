@@ -190,6 +190,7 @@ ol.plain li::before { counter-increment: hop; content: counter(hop) ". "; color:
   body.nav-open .sidebar { transform: none; visibility: visible; transition: transform .18s ease; box-shadow: 4px 0 18px rgb(0 0 0 / .35); }
   .topbar { gap: .5rem; padding-right: .5rem; }
   #updated { display: none; }
+  .top-actions { flex-shrink: 0; }                     /* the search box gives up the room, so the buttons never overflow */
   .tpl-layout, .tpl-editor { grid-template-columns: 1fr; }
   .grid.two { grid-template-columns: 1fr; }
   input[type="search"], input[type="text"], .quick { min-width: 0; width: 100%; }
