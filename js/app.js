@@ -112,6 +112,31 @@ document.getElementById("theme").addEventListener("click", () => {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   applyTheme(next); store.set("theme", next);
 });
+// ---------------------------------------------------------------- side nav: collapses to icons on wide screens, a drawer on narrow ones
+const navToggle = document.getElementById("nav-toggle");
+const scrim = document.getElementById("scrim");
+const narrow = matchMedia("(max-width: 900px)");
+function syncNavToggle() {
+  const open = narrow.matches ? document.body.classList.contains("nav-open") : !document.body.classList.contains("nav-collapsed");
+  const label = `${open ? "Collapse" : "Expand"} navigation`;
+  navToggle.setAttribute("aria-expanded", String(open));
+  navToggle.setAttribute("aria-label", label);
+  navToggle.title = label;
+  scrim.hidden = !(narrow.matches && open);
+}
+function closeDrawer() { document.body.classList.remove("nav-open"); syncNavToggle(); }
+document.body.classList.toggle("nav-collapsed", store.get("navCollapsed", false));
+navToggle.addEventListener("click", () => {
+  if (narrow.matches) document.body.classList.toggle("nav-open");
+  else store.set("navCollapsed", document.body.classList.toggle("nav-collapsed"));
+  syncNavToggle();
+});
+scrim.addEventListener("click", closeDrawer);
+document.getElementById("nav").addEventListener("click", (e) => { if (narrow.matches && e.target.closest("a")) closeDrawer(); });
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("nav-open")) closeDrawer(); });
+narrow.addEventListener("change", closeDrawer);
+syncNavToggle();
+
 refreshBtn.addEventListener("click", () => { runTask("update"); });
 const quick = document.getElementById("quick");
 quick.addEventListener("keydown", (e) => { if (e.key === "Enter") { const v = quick.value; quick.value = ""; return quickLookup(v); } });
