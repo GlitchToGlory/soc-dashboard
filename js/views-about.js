@@ -1,5 +1,9 @@
 import { h, ext } from "./ui.js";
 import { SOURCES } from "./net.js";
+import { TEMPLATES } from "./templates.js";
+import { PLAYBOOKS } from "./playbooks.js";
+import { KQL } from "./kql.js";
+import { LINK_GROUPS } from "./refdata.js";
 
 const REPO = "https://github.com/GlitchToGlory/soc-dashboard";
 
@@ -8,8 +12,12 @@ const tbl = (head, rows) => h("table", {},
   h("tbody", {}, rows.map((r) => h("tr", {}, r.map((c, i) => h(i === 0 ? "th" : "td", {}, c))))));
 const points = (items) => h("ul", { class: "about-points" }, items.map(([title, text]) => h("li", {}, h("strong", {}, title), " ", text)));
 
+const page = (route, name) => h("a", { href: `#/${route}` }, name);
+
 export function renderAbout() {
   const hosts = SOURCES.map((s) => s.host).filter((x, i, a) => a.indexOf(x) === i);
+  // Counts come from the data itself, so this page stays right when templates, playbooks, queries or links are added.
+  const links = LINK_GROUPS.reduce((n, [, items]) => n + items.length, 0);
   return h("div", { class: "about" },
     h("h1", {}, "About SOC Dashboard"),
     h("p", { class: "about-lead" },
@@ -28,6 +36,43 @@ export function renderAbout() {
         ["Your analysis stays on your device.", "The Toolkit (IOC extractor, URL analyser, email-header analyser, timeline builder, decoders) runs in your browser. Text you paste into it is never sent anywhere, and the incident timeline isn't even saved."],
         ["Look-ups elsewhere are your choice.", "VirusTotal, AbuseIPDB and urlscan links open in a new tab, and send only the indicator, only when you select them."],
       ])),
+
+    h("section", { class: "card" },
+      h("h2", {}, "What's inside"),
+      tbl(["Page", "What it does"], [
+        [page("overview", "Overview"), "One click fetches the KEV catalogue, the latest CVEs and news. Shows CVEs ranked by risk (in KEV first, then EPSS exploit probability, then CVSS), the latest KEV additions, headlines and your vendor/product watchlist."],
+        [page("cves", "CVEs"), "Newly published CVEs from NVD (last 1–30 days) with EPSS scores; filter by severity, KEV, EPSS, watchlist and date, and draft an advisory brief from any CVE."],
+        [page("kev", "KEV"), "CISA's Known Exploited Vulnerabilities catalogue, with search and a known-ransomware-use filter."],
+        [page("news", "News"), "Security headlines from Hacker News search, by topic. The main security news sites are linked under Reference → Links."],
+        [page("lookup", "Lookup"), "Look up one CVE (NVD, falling back to CIRCL), up to 25 CVEs pasted from a ticket, or search NVD by keyword."],
+        [page("attack", "ATT&CK"), "A full MITRE ATT&CK lookup: matrix, search, groups, software, mitigations, detections, a text-to-technique mapper and ATT&CK Navigator layer export. A one-time ~40 MB download, built in the background and kept in your browser."],
+        [page("templates", "Templates"), `${TEMPLATES.length} analyst templates (triage notes, escalation, incident report, shift handover…) – fill in the fields and copy the result. You can add your own.`],
+        [page("playbooks", "Playbooks"), `${PLAYBOOKS.length} response checklists whose ticks are remembered in your browser.`],
+        [page("toolkit", "Toolkit"), "IOC extractor & defanger, URL analyser & unwrapper, incident timeline builder, email-header analyser, Base64 / URL / hex decoder, timestamp converter, CIDR calculator and CVSS decoder."],
+        [page("reference", "Reference"), `${KQL.length} KQL hunting queries, TLP / kill chain / Pyramid of Pain, ports, triage commands, Windows event IDs and ${links} useful links.`],
+        [page("sources", "Sources"), "Test which services your browser may read, fetch settings, storage use and Delete fetched data."],
+      ])),
+
+    h("div", { class: "grid two" },
+      h("section", { class: "card" },
+        h("h2", {}, "Tips"),
+        h("ul", { class: "small" },
+          h("li", {}, "Press ", h("code", {}, "/"), " anywhere for quick lookup: an ATT&CK ID (", h("code", {}, "T1059.001"), "), a group (", h("code", {}, "APT29"), ") or a CVE (", h("code", {}, "CVE-2026-1234"), ")."),
+          h("li", {}, "Install it as an app: in Edge or Chrome use the install icon in the address bar; on a phone use “Add to Home Screen”."),
+          h("li", {}, "After the first visit the app itself opens offline. Data you've already fetched is still there; new fetches need a connection."),
+          h("li", {}, "Collapse the menu to icons with ☰ (top left) for more room."))),
+      h("section", { class: "card" },
+        h("h2", {}, "Which sources work in your browser"),
+        h("p", { class: "small muted" }, "A web page may only read another website if that site allows it, and each service decides that for itself – not this app. So the app adapts: anything blocked is skipped with a clear message, and the rest keeps working. ",
+          h("a", { href: "#/sources" }, "Sources → Test sources"), " checks them from your browser."),
+        tbl(["Feature", "Source", "If it's blocked"], [
+          ["Latest CVEs, keyword search", "NVD", "These two are unavailable (NVD is the only source with a date-range search)"],
+          ["Single / bulk CVE lookup", "NVD, then CIRCL", "Works if either one is allowed"],
+          ["EPSS scores", "FIRST", "CVEs still load, without EPSS"],
+          ["KEV catalogue", "CISA (GitHub mirror)", "KEV page stays empty"],
+          ["ATT&CK", "MITRE (GitHub)", "Use attack.mitre.org instead"],
+          ["Headlines", "Hacker News (Algolia)", "News page stays empty"],
+        ]))),
 
     h("div", { class: "grid two" },
       h("section", { class: "card" },
