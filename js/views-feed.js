@@ -137,7 +137,7 @@ export function renderOverview() {
       : null);
 
   return h("div", {}, h("h1", {}, "Overview"),
-    h("div", { class: "row" }, taskButton("update", "↻ Fetch KEV, CVEs + news", { primary: true }), daysSelect(), epssCheck(), taskButton("news", "Fetch news")),
+    h("div", { class: "row" }, taskButton("update", "↻ Fetch KEV, CVEs + News", { primary: true }), daysSelect(), epssCheck()),
     h("div", { class: "row" }, fetchedLine("kev", "KEV"), fetchedLine("cves", "CVEs"), fetchedLine("news", "News")),
     nothing ? getStarted() : null,
     nothing ? null : stats,
