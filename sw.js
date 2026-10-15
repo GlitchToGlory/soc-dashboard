@@ -4,7 +4,7 @@
 // >>> After you change ANY file in js/, css/, icons/ or index.html, change BUILD below. <<<
 // A new BUILD creates a new cache, installs it in the background, and the page reloads once. The test suite fails if a
 // file is missing from SHELL_FILES, so offline loading of every page is guaranteed.
-const BUILD = "2026-10-15.3";
+const BUILD = "2026-10-15.4";
 const SHELL = `soc-shell-${BUILD}`;
 const SHELL_FILES = [
   "./", "index.html", "css/styles.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
@@ -15,10 +15,16 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener("install", (e) => {
-  // cache:"reload" bypasses the browser's HTTP cache so a new build is never assembled from a mix of old and new files
+  // A new build must never be assembled from a mix of old and new files. cache:"no-store" skips the browser's HTTP cache, and the
+  // ?v=BUILD query skips GitHub Pages' CDN, which can keep serving the previous copy of a file for minutes after a deploy.
+  // Each file is stored under its plain URL, which is what the page requests.
   e.waitUntil(
     caches.open(SHELL)
-      .then((c) => c.addAll(SHELL_FILES.map((f) => new Request(f, { cache: "reload" }))))
+      .then((c) => Promise.all(SHELL_FILES.map(async (f) => {
+        const res = await fetch(`${f}?v=${encodeURIComponent(BUILD)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`${f}: HTTP ${res.status}`);
+        await c.put(f, res);
+      })))
       .then(() => self.skipWaiting())
   );
 });
