@@ -157,6 +157,13 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
 .mx-wrap { --mx-col: 190px; --mx-gap: .5rem; }
 .mx-top { display: flex; gap: var(--mx-gap); overflow-x: auto; overflow-y: hidden; margin-bottom: .35rem; }
 .mx-top > span { flex: 1 0 var(--mx-col); min-width: var(--mx-col); height: 1px; }
+/* The strip has no content of its own, so with macOS overlay scroll bars it was invisible until hovered (and stayed hidden after the
+   matrix re-rendered, e.g. on ticking "Show sub-techniques"). A styled scroll bar is always drawn and takes up its own height. */
+.mx-top::-webkit-scrollbar { height: 10px; }
+.mx-top::-webkit-scrollbar-track { background: var(--panel2); border-radius: 999px; }
+.mx-top::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+.mx-top::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+@supports not selector(::-webkit-scrollbar) { .mx-top { scrollbar-width: thin; scrollbar-color: var(--muted) var(--panel2); } }
 .matrix { display: flex; gap: var(--mx-gap); overflow-x: auto; padding-bottom: .75rem; align-items: flex-start; scrollbar-width: none; }
 .matrix::-webkit-scrollbar { display: none; }
 .mx-col { flex: 1 0 var(--mx-col); min-width: var(--mx-col); }
