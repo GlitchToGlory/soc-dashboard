@@ -42,6 +42,7 @@ async function render() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(safeDecode);
   const name = routeName();
   document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.route === name));
+  document.body.dataset.wide = name === "attack" && !parts[1] ? "1" : "0";   // the ATT&CK matrix tab (#/attack) gets the full width
   let view;
   try {
     const [fn] = await Promise.all([LOADERS[name](), DATA_ROUTES.has(name) ? dataReady : null]);
