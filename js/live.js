@@ -3,6 +3,7 @@
 import { fetchLimited, sleep, FetchError, describeError, probeSource, SOURCES, NVD_URL, CIRCL_URL, EPSS_URL, HN_URL, KEV_URL, ATTACK_URL } from "./net.js";
 import { nvdToCves, cve5ToCve, kevFromJson, mergeEpss, hnToNews, CVE_ID } from "./convert.js";
 import { kvSet } from "./store.js";
+import { own } from "./lib.js";
 
 export const TOPICS = { vulnerabilities: "vulnerability", cve: "CVE", ransomware: "ransomware", zeroday: "zero-day", breach: "data breach", malware: "malware", phishing: "phishing" };
 export const TOPIC_LABELS = { vulnerabilities: "Vulnerabilities", cve: "CVE mentions", ransomware: "Ransomware", zeroday: "Zero-days", breach: "Data breaches", malware: "Malware", phishing: "Phishing" };
@@ -83,7 +84,7 @@ export async function fetchKev({ signal, fetchImpl } = {}) {
 
 // ---------------------------------------------------------------- news
 export async function fetchNews({ topic = "vulnerabilities", signal, fetchImpl } = {}) {
-  const query = Object.hasOwn(TOPICS, topic) ? TOPICS[topic] : TOPICS.vulnerabilities;
+  const query = own(TOPICS, topic) ? TOPICS[topic] : TOPICS.vulnerabilities;
   const q = new URLSearchParams({ query, tags: "story", hitsPerPage: "50", numericFilters: "points>2" });
   let json;
   try { json = await fetchLimited(`${HN_URL}?${q}`, { maxBytes: 3_000_000, timeoutMs: 20_000, signal, fetchImpl }); }
@@ -152,7 +153,8 @@ export async function searchCves(keyword, { signal, fetchImpl } = {}) {
 // ---------------------------------------------------------------- ATT&CK (one big download, built in a worker)
 const defaultWorker = () => new Worker(new URL("./attack-worker.js", import.meta.url), { type: "module" });
 
-export function buildInWorker(buffer, { signal, workerFactory } = {}) {
+// `chunks`: the download as received (an array of Uint8Array). Each piece's memory is transferred to the worker, not copied.
+export function buildInWorker(chunks, { signal, workerFactory } = {}) {
   return new Promise((resolve, reject) => {
     let w, t, onAbort;
     const finish = (fn) => (v) => { clearTimeout(t); if (signal) signal.removeEventListener("abort", onAbort); try { w && w.terminate(); } catch { /* ignore */ } fn(v); };
@@ -163,20 +165,24 @@ export function buildInWorker(buffer, { signal, workerFactory } = {}) {
     try { w = (workerFactory || defaultWorker)(); } catch { return bad(new Error("Web Workers are not available in this browser")); }
     w.onmessage = (e) => (e.data && e.data.ok ? ok(e.data.data) : bad(new Error((e.data && e.data.error) || "Build failed")));
     w.onerror = () => bad(new Error("The ATT&CK builder crashed (probably out of memory)"));
-    w.postMessage({ buffer }, [buffer]);
+    // A piece that is a view into a larger or shared buffer is copied first, so every transferred buffer is exactly one piece.
+    const own = chunks.map((c) => (c.byteOffset === 0 && c.byteLength === c.buffer.byteLength ? c : c.slice()));
+    const buffers = own.map((c) => c.buffer);
+    w.postMessage({ chunks: own }, [...new Set(buffers)]);
   });
 }
 
 export async function downloadAttack({ signal, onProgress = noop, fetchImpl, workerFactory } = {}) {
-  let bytes;
+  let chunks;
   try {
-    bytes = await fetchLimited(ATTACK_URL, {
-      as: "bytes", maxBytes: 250_000_000, timeoutMs: 300_000, signal, fetchImpl,
+    chunks = await fetchLimited(ATTACK_URL, {
+      as: "chunks", maxBytes: 250_000_000, timeoutMs: 300_000, signal, fetchImpl,
       onProgress: (got, total) => onProgress(`Downloading ATT&CK… ${mb(got)}${total ? ` of ${mb(total)}` : ""} MB`),
     });
   } catch (e) { rethrowCancel(e); throw wrap(e, "The MITRE ATT&CK data on GitHub"); }
   onProgress("Building the ATT&CK lookup (a few seconds)…");
-  const data = await buildInWorker(bytes.buffer, { signal, workerFactory });
+  const data = await buildInWorker(chunks, { signal, workerFactory });
+  chunks = null;
   await kvSet("attack", { savedAt: Date.now(), via: "MITRE ATT&CK (GitHub)", version: data.version, data });
   return { version: data.version, techniques: Object.keys(data.techniques).length };
 }

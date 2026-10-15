@@ -4,6 +4,9 @@
 export const MAX_TEXT = 1_000_000;
 export const capText = (s, n = MAX_TEXT) => String(s ?? "").slice(0, n);
 
+// Object.hasOwn equivalent that also works on Safari / iOS before 15.4.
+export const own = (o, k) => o != null && Object.prototype.hasOwnProperty.call(o, k);
+
 export const SEV_ORDER = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, NONE: 0, "": -1 };
 
 export function fmtUTC(iso) {
@@ -16,6 +19,7 @@ export function fmtUTC(iso) {
 }
 
 export function timeAgo(iso, now = Date.now()) {
+  if (iso == null || iso === "") return "";
   const t = typeof iso === "number" ? iso : new Date(iso.length === 10 ? iso + "T00:00:00Z" : iso).getTime();
   if (isNaN(t)) return "";
   const s = Math.max(0, Math.round((now - t) / 1000));
@@ -63,13 +67,15 @@ export function extractIOCs(raw) {
   const emails = uniq(text.match(EMAILS) || []);
   const ips = uniq(text.match(IPV4) || []);
   const sha256 = uniq((text.match(SHA256) || []).map((h) => h.toLowerCase()));
-  const sha1 = uniq((text.match(SHA1) || []).map((h) => h.toLowerCase()).filter((h) => !sha256.some((x) => x.includes(h))));
-  const md5 = uniq((text.match(MD5) || []).map((h) => h.toLowerCase()).filter((h) => !sha256.some((x) => x.includes(h)) && !sha1.some((x) => x.includes(h))));
+  // \b on both sides means a shorter hash can never match inside a longer one, so no cross-checking is needed.
+  const sha1 = uniq((text.match(SHA1) || []).map((h) => h.toLowerCase()));
+  const md5 = uniq((text.match(MD5) || []).map((h) => h.toLowerCase()));
   const cves = uniq((text.match(CVES) || []).map((c) => c.toUpperCase()));
   const emailDomains = new Set(emails.map((e) => e.split("@")[1].toLowerCase()));
   const urlHosts = new Set(urls.map((u) => { try { return new URL(u).hostname.toLowerCase(); } catch { return ""; } }));
+  const ipSet = new Set(ips);
   const domains = uniq((text.match(DOMAINS) || []).map((d) => d.toLowerCase()))
-    .filter((d) => !FILE_EXT.test(d) && !/^\d+(\.\d+)+$/.test(d) && !emailDomains.has(d) && !urlHosts.has(d) && !ips.includes(d));
+    .filter((d) => !FILE_EXT.test(d) && !/^\d+(\.\d+)+$/.test(d) && !emailDomains.has(d) && !urlHosts.has(d) && !ipSet.has(d));
   return { urls, domains, ips, emails, sha256, sha1, md5, cves, emailDomains: [...emailDomains], urlHosts: [...urlHosts].filter(Boolean) };
 }
 
@@ -85,18 +91,23 @@ export function b64decode(s) {
 }
 export function b64encode(s) {
   const bytes = new TextEncoder().encode(capText(s, 2_000_000));
-  let bin = "";
-  bytes.forEach((b) => (bin += String.fromCharCode(b)));
-  return btoa(bin);
+  const parts = [];
+  for (let i = 0; i < bytes.length; i += 0x8000) parts.push(String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)));
+  return btoa(parts.join(""));
 }
 export function hexdecode(s) {
   const clean = capText(s, 4_000_000).replace(/0x/gi, "").replace(/[^0-9a-fA-F]/g, "");
   if (clean.length % 2) throw new Error("Odd number of hex digits");
-  const bytes = new Uint8Array(clean.match(/../g).map((h) => parseInt(h, 16)));
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
   return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 }
+const HEX = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
 export function hexencode(s) {
-  return [...new TextEncoder().encode(capText(s, 2_000_000))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const bytes = new TextEncoder().encode(capText(s, 2_000_000));
+  const out = new Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) out[i] = HEX[bytes[i]];
+  return out.join("");
 }
 
 // ---------- Time ----------
@@ -108,7 +119,8 @@ export function parseTimeInput(v) {
     const len = v.replace(/^-/, "").split(".")[0].length;
     if (len >= 16) n = n / 1e6;        // microseconds -> seconds
     else if (len >= 13) n = n / 1e3;   // milliseconds -> seconds
-    return new Date(n * 1000);
+    const d = new Date(n * 1000);
+    return isNaN(d) ? null : d;        // out of range (e.g. 20+ digits) -> "could not parse", not a crash
   }
   const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(v) ? v : v.replace(" ", "T") + "Z");
   return isNaN(d) ? null : d;
@@ -124,7 +136,7 @@ export function placeholdersOf(body) {
 export function fillTemplate(body, values) {
   // Own properties only: a placeholder named {{constructor}} or {{__proto__}} must not reach Object.prototype.
   return body.replace(PLACEHOLDER, (m, k) => {
-    const v = Object.hasOwn(values, k) ? values[k] : "";
+    const v = own(values, k) ? values[k] : "";
     return typeof v === "string" && v.trim() ? v : `[${k}]`;
   });
 }
@@ -247,7 +259,7 @@ export function decodeCvss(vector) {
   const rows = [];
   for (const p of parts.slice(1)) {
     const [k, v] = p.split(":");
-    if (!Object.hasOwn(table, k)) { rows.push([k, v, "(temporal / environmental or unknown metric)"]); continue; }
+    if (!own(table, k)) { rows.push([k, v, "(temporal / environmental or unknown metric)"]); continue; }
     rows.push([table[k][0], table[k][1][v] || v, k + ":" + v]);
   }
   return { version: ver[1], rows };

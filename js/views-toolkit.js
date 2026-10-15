@@ -2,6 +2,7 @@ import { h, ext, copyBtn, field, select, debounce, nodes } from "./ui.js";
 import { extractIOCs, defang, refang, b64decode, b64encode, hexdecode, hexencode, parseTimeInput, timeAgo, parseHeaders, cidrInfo, ipClass, decodeCvss } from "./lib.js";
 
 const enc = encodeURIComponent;
+const IOC_SHOW = 300;   // rows drawn per indicator type; a huge paste can't freeze the page ("Copy all" still copies every one)
 const IOC_LABELS = [
   ["ips", "IPv4 addresses"], ["domains", "Domains"], ["urls", "URLs"], ["emails", "Email addresses"],
   ["urlHosts", "Hosts found in URLs"], ["emailDomains", "Sender / email domains"],
@@ -28,7 +29,8 @@ function iocCard() {
     const groups = IOC_LABELS.filter(([k]) => last[k].length).map(([k, label]) =>
       h("div", { class: "ioc-group" },
         h("div", { class: "row" }, h("h3", {}, `${label} (${last[k].length})`), copyBtn(() => last[k].map(show).join("\n"), "Copy all")),
-        h("ul", { class: "plain" }, last[k].map((v) => h("li", {}, h("code", {}, show(v)), copyBtn(() => show(v), "Copy"), lookupLinks(k, v))))));
+        h("ul", { class: "plain" }, last[k].slice(0, IOC_SHOW).map((v) => h("li", {}, h("code", {}, show(v)), copyBtn(() => show(v), "Copy"), lookupLinks(k, v)))),
+        last[k].length > IOC_SHOW ? h("p", { class: "small muted" }, `Showing the first ${IOC_SHOW} of ${last[k].length}. “Copy all” copies every one.`) : null));
     out.replaceChildren(...(groups.length ? groups : [h("p", { class: "muted" }, "No indicators found.")]));
   };
   const run = () => { last = extractIOCs(input.value); render(); };

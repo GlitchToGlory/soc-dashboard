@@ -3,7 +3,7 @@ import { state, loadAttack } from "./state.js";
 import { normaliseId, kindOf, lookup, searchAttack, findTechniquesInText, tacticNames, navigatorLayer, groupByTactic } from "./attack-lib.js";
 import { KQL } from "./kql.js";
 import { taskButton } from "./live-ui.js";
-import { timeAgo } from "./lib.js";
+import { timeAgo, own } from "./lib.js";
 
 export const atk = { q: "", platform: "all", subs: false };
 const marks = () => new Set(store.get("attackMarks", []));
@@ -50,14 +50,16 @@ function missingCard() {
 }
 
 // ------------------------------------------------------------------ cards
-function techRow(t, d, opts = {}) {
+// `m` is the current selection; callers drawing many rows pass it in so it is read from storage once, not once per row.
+function techRow(t, d, opts = {}, m = marks()) {
   const parent = t.parent ? d.techniques[t.parent] : null;
+  const tacs = opts.noTactic ? [] : tacticNames(d, parent || t);
   return h("li", { class: "attack-row" },
     h("span", { class: "id" }, link(t.id)), " ",
     h("span", {}, parent ? `${parent.name}: ${t.name}` : t.name), " ",
-    marks().has(t.id) ? badge("★ selected", "watch") : null,
+    m.has(t.id) ? badge("★ selected", "watch") : null,
     opts.how ? h("div", { class: "small muted" }, opts.how) : null,
-    !opts.noTactic && tacticNames(d, parent || t).length ? h("div", { class: "small muted" }, tacticNames(d, parent || t).join(" · ")) : null);
+    tacs.length ? h("div", { class: "small muted" }, tacs.join(" · ")) : null);
 }
 
 // ------------------------------------------------------------------ matrix + search
@@ -83,7 +85,7 @@ function matrix(d) {
   for (const t of Object.values(d.techniques)) {
     if (t.parent) continue;
     if (atk.platform !== "all" && !(t.platforms || []).includes(atk.platform)) continue;
-    for (const s of t.tactics) if (Object.hasOwn(byTactic, s)) byTactic[s].push(t);
+    for (const s of t.tactics) if (own(byTactic, s)) byTactic[s].push(t);
   }
   const m = marks();
   const cols = d.tactics.map((tac) => {
@@ -112,11 +114,12 @@ function matrix(d) {
 
 function searchResults(d) {
   const r = searchAttack(d, atk.q, { platform: atk.platform });
+  const m = marks();
   const sec = (title, bucket, render) => bucket.total ? h("section", { class: "card" },
     h("h2", {}, `${title} (${bucket.total})`), h("ul", { class: "plain" }, bucket.items.map(render)),
     bucket.total > bucket.items.length ? h("p", { class: "muted small" }, `Showing the top ${bucket.items.length} – refine your search to narrow down.`) : null) : null;
   const parts = [
-    sec("Techniques", r.techniques, (t) => techRow(t, d)),
+    sec("Techniques", r.techniques, (t) => techRow(t, d, {}, m)),
     sec("Groups", r.groups, (g) => h("li", {}, h("span", { class: "id" }, link(g.id)), " ", g.name, g.aliases.length ? h("span", { class: "small muted" }, ` (${g.aliases.slice(0, 4).join(", ")})`) : null)),
     sec("Software", r.software, (s) => h("li", {}, h("span", { class: "id" }, link(s.id)), " ", s.name, " ", badge(s.type, "epss"))),
     sec("Mitigations", r.mitigations, (m) => h("li", {}, h("span", { class: "id" }, link(m.id)), " ", m.name)),
@@ -129,9 +132,11 @@ function listView(d, tab) {
   const src = { groups: d.groups, software: d.software, mitigations: d.mitigations }[tab];
   const q = h("input", { type: "search", placeholder: `Filter ${tab}…`, "aria-label": `Filter ${tab}` });
   const out = h("ul", { class: "plain" });
+  // Sorted and lower-cased once per visit, not on every keystroke.
+  const all = Object.values(src).sort((a, b) => a.name.localeCompare(b.name)).map((x) => [x, `${x.id} ${x.name} ${(x.aliases || []).join(" ")}`.toLowerCase()]);
   const redraw = () => {
     const f = q.value.trim().toLowerCase();
-    const items = Object.values(src).filter((x) => !f || `${x.id} ${x.name} ${(x.aliases || []).join(" ")}`.toLowerCase().includes(f)).sort((a, b) => a.name.localeCompare(b.name));
+    const items = all.filter(([, s]) => !f || s.includes(f)).map(([x]) => x);
     out.replaceChildren(...items.map((x) => h("li", {}, h("span", { class: "id" }, link(x.id)), " ", x.name,
       x.aliases?.length ? h("span", { class: "small muted" }, ` (${x.aliases.slice(0, 3).join(", ")})`) : null,
       x.tech ? h("span", { class: "small muted" }, ` · ${x.tech.length} technique${x.tech.length === 1 ? "" : "s"}`) : null)));
@@ -164,6 +169,7 @@ function detailView(d, id) {
   const back = h("p", { class: "small" }, h("a", { href: "#/attack" }, "← Matrix & search"));
   const idLine = h("div", { class: "line" }, h("span", { class: "id" }, o.id), h("h2", { class: "flat" }, o.name));
 
+  const sel = marks();
   if (kind === "technique") {
     const parent = o.parent ? d.techniques[o.parent] : null;
     const rel = KQL.filter((q) => q.attack.some((a) => o.id === a || o.id.startsWith(a + ".") || a.startsWith(o.id + ".")));
@@ -176,7 +182,7 @@ function detailView(d, id) {
         markButton([o.id]), copyBtn(`${o.id} – ${o.name}`, "Copy ID + name"),
         copyBtn(`${o.id} – ${parent ? parent.name + ": " : ""}${o.name} (${tacticNames(d, parent || o).join(", ")})`, "Copy for ticket"),
         ext(o.url || `https://attack.mitre.org/techniques/${o.id.replace(".", "/")}/`, "MITRE page ↗", "btn sm")),
-      o.sub?.length ? h("div", {}, h("h3", {}, `Sub-techniques (${o.sub.length})`), h("ul", { class: "plain" }, o.sub.map((s) => d.techniques[s] ? techRow(d.techniques[s], d, { noTactic: true }) : null))) : null,
+      o.sub?.length ? h("div", {}, h("h3", {}, `Sub-techniques (${o.sub.length})`), h("ul", { class: "plain" }, o.sub.map((s) => d.techniques[s] ? techRow(d.techniques[s], d, { noTactic: true }, sel) : null))) : null,
       (o.det?.length || o.detText) ? h("div", {}, h("h3", {}, "Detection"),
         o.detText ? h("p", { class: "pre-wrap" }, o.detText) : null,
         o.det?.length ? h("ul", { class: "plain" }, o.det.map((x) => h("li", {}, h("span", { class: "id" }, x.id), " ", x.name))) : null) : null,
@@ -204,13 +210,13 @@ function detailView(d, id) {
       kind === "group" && o.sw?.length ? h("div", {}, h("h3", {}, `Software used (${o.sw.length})`), h("p", {}, o.sw.map((s, i) => [i ? ", " : "", link(s, d.software[s]?.name || s)]))) : null,
       kind === "software" && o.groups?.length ? h("div", {}, h("h3", {}, `Groups using it (${o.groups.length})`), h("p", {}, o.groups.map((g, i) => [i ? ", " : "", link(g, d.groups[g]?.name || g)]))) : null,
       h("h3", {}, `Techniques (${techIds.length})`),
-      byTac.length ? byTac.map((r) => h("div", { class: "ioc-group" }, h("strong", {}, r.tactic.name), h("ul", { class: "plain" }, r.items.map((t) => techRow(t, d, { noTactic: true }))))) : h("p", { class: "muted" }, "No technique mappings recorded.")));
+      byTac.length ? byTac.map((r) => h("div", { class: "ioc-group" }, h("strong", {}, r.tactic.name), h("ul", { class: "plain" }, r.items.map((t) => techRow(t, d, { noTactic: true }, sel))))) : h("p", { class: "muted" }, "No technique mappings recorded.")));
   }
 
   return h("div", {}, back, h("section", { class: "card" }, idLine, h("p", { class: "pre-wrap" }, o.desc),
     h("div", { class: "actions" }, copyBtn(`${o.id} – ${o.name}`, "Copy ID + name"), ext(o.url || `https://attack.mitre.org/mitigations/${o.id}/`, "MITRE page ↗", "btn sm")),
     h("h3", {}, `Mitigates (${o.tech.length})`),
-    h("ul", { class: "plain" }, o.tech.map((x) => d.techniques[x.id] ? techRow(d.techniques[x.id], d, { how: x.how }) : null))));
+    h("ul", { class: "plain" }, o.tech.map((x) => d.techniques[x.id] ? techRow(d.techniques[x.id], d, { how: x.how }, sel) : null))));
 }
 
 // ------------------------------------------------------------------ selection + text mapper
@@ -234,10 +240,11 @@ function toolsView(d) {
   const out = h("div", {});
   const run = () => {
     const found = findTechniquesInText(d, ta.value);
+    const picked = marks();
     if (!found.length) { out.replaceChildren(empty("No techniques recognised.")); return; }
     out.replaceChildren(
       h("p", { class: "small muted" }, `${found.length} found. Matches by name can be false positives – review before adding.`),
-      h("ul", { class: "plain" }, found.map((f) => techRow(f.t, d, { how: f.how === "ID" ? "matched by ID" : "matched by name" }))),
+      h("ul", { class: "plain" }, found.map((f) => techRow(f.t, d, { how: f.how === "ID" ? "matched by ID" : "matched by name" }, picked))),
       h("button", { class: "btn primary", type: "button", onclick: () => { const s = marks(); found.forEach((f) => s.add(f.id)); saveMarks(s); drawSel(); } }, `Add all ${found.length} to my selection`));
   };
   return h("div", { class: "grid two" }, h("section", { class: "card" }, sel),

@@ -71,6 +71,8 @@ export function renderLookup(parts) {
         h("p", { class: "small muted" }, "Product or vendor names work best. Returns up to 50 results."))),
     h("div", { class: "row" }, cancel), status, kevNote, out);
   if (CVE_ID.test(normaliseCveId(parts[1]))) queueMicrotask(doOne);
+  // Leaving the page stops a lookup that is still running, instead of letting it keep downloading in the background.
+  window.addEventListener("hashchange", () => { if (ctl) ctl.abort(); }, { once: true });
   return view;
 }
 

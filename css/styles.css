@@ -89,7 +89,10 @@ a.stat { color: inherit; display: block; } a.stat:hover { text-decoration: none;
 label.check { display: flex; flex-direction: row; align-items: center; gap: .4rem; text-transform: none; font-size: .9rem; color: var(--text); }
 input[type="text"], input[type="search"], select, textarea { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .4rem .6rem; font: inherit; }
 input[type="search"], input[type="text"] { min-width: 220px; }
-textarea { width: 100%; resize: vertical; } textarea.mono { font-size: .85rem; }
+textarea { width: 100%; resize: vertical; }
+/* A select is as wide as its longest option; on a phone that can be wider than the screen. Let it (and its label) shrink instead. */
+select { max-width: 100%; }
+.row > label, .toolbar > label { min-width: 0; max-width: 100%; } textarea.mono { font-size: .85rem; }
 
 .list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .75rem; }
 details.item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); content-visibility: auto; contain-intrinsic-size: auto 72px; }
@@ -197,4 +200,9 @@ ol.plain li::before { counter-increment: hop; content: counter(hop) ". "; color:
   .quick { flex: 1 1 auto; }
 }
 @media (max-width: 560px) { .brand { display: none; } }
+/* iPhone / iPad Safari zooms the whole page in when you tap a form field whose text is under 16px. Touch screens get 16px fields. */
+/* (:root raises the specificity above the field rules earlier in the file, e.g. input[type="search"], .quick, textarea.mono.) */
+@media (pointer: coarse) {
+  :root input, :root select, :root textarea { font-size: 16px; }
+}
 @media print { .topbar, .sidebar, .scrim, .foot, .toolbar, .actions, .btn, .live { display: none !important; } body { background: #fff; color: #000; } }

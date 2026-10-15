@@ -1,7 +1,7 @@
 import { h, store } from "./ui.js";
 import { state, loadAll } from "./state.js";
 import { onStatus, runTask, cancelTask } from "./tasks.js";
-import { timeAgo } from "./lib.js";
+import { timeAgo, own } from "./lib.js";
 
 // Clickjacking guard (GitHub Pages can't send X-Frame-Options / frame-ancestors, so refuse to run inside someone else's frame).
 if (window.top !== window.self) {
@@ -31,7 +31,7 @@ const REDRAW_AFTER_TASK = new Set(["overview", "cves", "kev", "news", "attack", 
 const app = document.getElementById("app");
 const routeName = () => {
   const first = safeDecode(location.hash.replace(/^#\/?/, "").split("/")[0]);
-  return Object.hasOwn(LOADERS, first) ? first : "overview";       // Object.hasOwn: "#/constructor" must not reach Object.prototype
+  return own(LOADERS, first) ? first : "overview";       // own(): "#/constructor" must not reach Object.prototype
 };
 
 let dataReady = loadAll().catch(() => {});
