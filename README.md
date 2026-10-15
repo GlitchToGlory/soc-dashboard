@@ -6,7 +6,7 @@ Nothing is fetched until **you** press a button, so there is no background job, 
 ## Pages
 | Page | What it does |
 |---|---|
-| **Overview** | One-click *Fetch KEV + latest CVEs*, risk-ranked CVEs (KEV → EPSS → CVSS), latest KEV additions, headlines, your vendor/product watchlist |
+| **Overview** | One-click *Fetch KEV, CVEs + news*, risk-ranked CVEs (KEV → EPSS → CVSS), latest KEV additions, headlines, your vendor/product watchlist |
 | **CVEs** | Live fetch of newly published CVEs from NVD (last 1–30 days) with EPSS scores; filters, KEV flag, *Draft brief* |
 | **KEV** | Live fetch of the CISA Known Exploited Vulnerabilities catalogue; search, ransomware filter |
 | **News** | Live security headlines from Hacker News search (topic selector). Main security news sites are linked under Reference → Links |
