@@ -255,7 +255,7 @@ export function renderNews() {
     const q = newsFilter.q.trim().toLowerCase();
     const items = state.news.filter((n) => (topic === "all" || !tagged || (n.topics || []).includes(topic)) && (!q || `${n.title} ${n.summary}`.toLowerCase().includes(q)));
     results.replaceChildren(...nodes(
-      !tagged && topic !== "all" ? h("p", { class: "small muted" }, "These headlines were fetched before topic filters existed – press ↻ Fetch headlines to sort them by topic.") : null,
+      !tagged && topic !== "all" ? h("p", { class: "small muted" }, "These headlines were fetched before topic filters existed – press ↻ Fetch latest headlines to sort them by topic.") : null,
       h("p", { class: "muted small" }, `${items.length} of ${state.news.length} stories${topic !== "all" && tagged ? ` · ${TOPIC_LABELS[topic]}` : ""}`),
       items.length ? pagedList(items, newsItem, 30) : empty("No stories match.")));
   };
@@ -265,6 +265,6 @@ export function renderNews() {
   return h("div", {}, h("h1", {}, "Security news"),
     h("p", { class: "muted small" }, "Headlines come from Hacker News searches for each security topic below, combined — community-ranked links, not a newswire. Each fetch covers every topic; the topic buttons just filter the list. Most security news sites don't allow direct reads from a web page, so the main ones are linked under Reference → Links instead."),
     state.news.length ? topicPicker((t) => { topic = t; update(); }) : null,
-    h("div", { class: "row" }, taskButton("news", "↻ Fetch headlines", { primary: true }), fetchedLine("news", "News")),
+    h("div", { class: "row" }, taskButton("news", "↻ Fetch latest headlines", { primary: true }), fetchedLine("news", "News")),
     state.news.length ? h("div", { class: "toolbar" }, field("Search", search)) : getStarted(), state.news.length ? results : null);
 }
