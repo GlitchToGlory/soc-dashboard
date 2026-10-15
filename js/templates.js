@@ -219,7 +219,7 @@ Thanks,
   },
   {
     id: "incident-report", title: "Incident report", group: "Response",
-    desc: "Initial or final incident report with timeline, impact and actions.",
+    desc: "Initial or final incident report with timeline, impact and actions. Build the timeline in Toolkit → Incident timeline builder, then use “Open in Incident report”.",
     body: `# Incident report – {{incident_title}}
 
 **Incident ID:** {{incident_id}}   **Severity:** {{severity}}   **Status:** {{status}}
@@ -229,11 +229,7 @@ Thanks,
 {{executive_summary}}
 
 ## Timeline (UTC)
-| Time | Event | Source |
-|---|---|---|
-| {{t1}} | {{e1}} | {{s1}} |
-| {{t2}} | {{e2}} | {{s2}} |
-| {{t3}} | {{e3}} | {{s3}} |
+{{timeline}}
 
 ## Root cause / initial access
 {{root_cause}}
