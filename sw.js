@@ -4,7 +4,7 @@
 // >>> After you change ANY file in js/, css/, icons/ or index.html, change BUILD below. <<<
 // A new BUILD creates a new cache, installs it in the background, and the page reloads once. The test suite fails if a
 // file is missing from SHELL_FILES, so offline loading of every page is guaranteed.
-const BUILD = "2026-10-15.6";
+const BUILD = "2026-10-15.7";
 const SHELL = `soc-shell-${BUILD}`;
 const SHELL_FILES = [
   "./", "index.html", "css/styles.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
