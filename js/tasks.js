@@ -33,8 +33,8 @@ export async function runTask(name, overrides = {}) {
   const parts = [];
   try {
     if (name === "kev" || name === "update") { progress("Fetching the CISA KEV catalogue…"); const r = await fetchKev({ signal }); parts.push(`${r.count} KEV ${r.count === 1 ? "entry" : "entries"}`); await loadAll(); }
-    if (name === "cves" || name === "update") { const r = await fetchLatestCves({ days: s.days, epss: s.epss, signal, onProgress: progress }); parts.push(`${pluralise(r.count, "new CVE")}${r.note ? ` — ${r.note}` : ""}`); await loadAll(); }
-    if (name === "news") { progress("Fetching headlines…"); const r = await fetchNews({ topic: s.topic, signal }); parts.push(pluralise(r.count, "headline")); await loadAll(); }
+    if (name === "cves" || name === "update") { const r = await fetchLatestCves({ days: s.days, epss: s.epss, signal, onProgress: progress }); parts.push(`${pluralise(r.count, "new CVE")}${r.note ? ` — ${r.note.replace(/\.$/, "")}` : ""}`); await loadAll(); }
+    if (name === "news" || name === "update") { progress("Fetching headlines…"); const r = await fetchNews({ topic: s.topic, signal }); parts.push(pluralise(r.count, "headline")); await loadAll(); }
     if (name === "attack") { const r = await downloadAttack({ signal, onProgress: progress }); parts.push(`ATT&CK v${r.version || "?"}: ${pluralise(r.techniques, "technique")}`); await loadAttack(true); }
     const result = { ok: true, name, message: `Done — ${parts.join("; ")}.` };
     emit({ running: false, ...result });

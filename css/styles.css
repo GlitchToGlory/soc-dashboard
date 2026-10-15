@@ -21,18 +21,37 @@ h2.flat { margin: 0; }
 code, pre, textarea.mono, .mono { font-family: var(--mono); }
 code { background: var(--panel2); padding: .05rem .35rem; border-radius: 5px; font-size: .85em; word-break: break-all; }
 
-.topbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; padding: .6rem 1rem; background: var(--panel); border-bottom: 1px solid var(--border); }
+/* App chrome, laid out like Microsoft Defender: a slim header across the top, a vertical nav down the left that collapses to icons
+   (desktop) or slides in as a drawer (narrow screens), and the page content to its right. */
+:root { --topbar-h: 52px; --side-w: 220px; --side-w-min: 56px; }
+.topbar { position: sticky; top: 0; z-index: 30; height: var(--topbar-h); display: flex; gap: 1rem; align-items: center; padding: 0 1rem 0 .5rem; background: var(--panel); border-bottom: 1px solid var(--border); }
 .brand { font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 .logo { color: var(--accent); }
-nav { display: flex; gap: .2rem; flex-wrap: wrap; flex: 1; }
-nav a { padding: .3rem .6rem; border-radius: 8px; color: var(--muted); font-weight: 600; }
-nav a:hover { text-decoration: none; background: var(--panel2); color: var(--text); }
-nav a.active { background: var(--accent); color: var(--accent-ink); }
-.top-actions { display: flex; gap: .5rem; align-items: center; }
-.quick { min-width: 240px; }
+.top-actions { display: flex; gap: .5rem; align-items: center; margin-left: auto; min-width: 0; }
+.top-actions .btn { white-space: nowrap; }
+#updated { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quick { min-width: 240px; flex: 0 1 420px; }
+.ico { width: 20px; height: 20px; flex: 0 0 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; background: none; border: 0; border-radius: 8px; color: var(--text); cursor: pointer; }
+.nav-toggle:hover { background: var(--panel2); }
+
+.shell { display: flex; align-items: flex-start; }
+.sidebar { position: sticky; top: var(--topbar-h); z-index: 20; flex: 0 0 var(--side-w); width: var(--side-w); height: calc(100vh - var(--topbar-h)); overflow-y: auto; overflow-x: hidden; background: var(--panel); border-right: 1px solid var(--border); padding: .5rem 0; transition: width .15s ease, flex-basis .15s ease; }
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar nav a { position: relative; display: flex; align-items: center; gap: .85rem; height: 40px; padding: 0 1.1rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.sidebar nav a:hover { text-decoration: none; background: var(--panel2); color: var(--text); }
+.sidebar nav a.active { background: var(--panel2); color: var(--text); }
+.sidebar nav a.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.sidebar nav a.active .ico { color: var(--accent); }
+body.nav-collapsed .sidebar { flex-basis: var(--side-w-min); width: var(--side-w-min); }
+body.nav-collapsed .sidebar .lbl { display: none; }
+.content { flex: 1; min-width: 0; }
+.scrim { position: fixed; inset: var(--topbar-h) 0 0 0; z-index: 15; background: rgb(0 0 0 / .45); }
+.scrim[hidden] { display: none; }
 
 main { max-width: 1240px; margin: 0 auto; padding: 1rem; outline: none; }
 .foot { max-width: 1240px; margin: 0 auto; padding: 1rem 1rem 2rem; border-top: 1px solid var(--border); }
+
 .banner { padding: .55rem 1rem; background: #4a3205; color: #fde68a; border-bottom: 1px solid #7a5410; font-size: .9rem; }
 :root[data-theme="light"] .banner { background: #fff3cd; color: #664d03; border-color: #ffe08a; }
 .live { display: flex; gap: .6rem; align-items: center; padding: .5rem 1rem; background: var(--panel2); border-bottom: 1px solid var(--border); font-size: .9rem; }
@@ -105,8 +124,7 @@ ul.plain li:last-child { border-bottom: 0; }
 .news-item .t { font-weight: 600; } .news-item .s { color: var(--muted); font-size: .88rem; margin-top: .15rem; }
 
 .tpl-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1rem; align-items: start; }
-/* The Templates and Playbooks sidebars are <nav> elements, so the top-menu rule above (display:flex; flex-wrap:wrap) also reached them
-   and let short items share a row (e.g. "TRIAGE" beside "+ New template"). A sidebar is a plain vertical list. */
+/* The Templates and Playbooks sidebars are <nav> elements; keep them a plain vertical list. */
 .tpl-list { display: block; }
 .tpl-list h3 { margin: .9rem 0 .3rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
 .tpl-list a { display: block; padding: .35rem .6rem; border-radius: 8px; color: var(--text); }
@@ -157,8 +175,16 @@ ol.plain { counter-reset: hop; }
 ol.plain li::before { counter-increment: hop; content: counter(hop) ". "; color: var(--muted); }
 
 @media (max-width: 900px) {
+  /* Narrow screens: the nav is a drawer over the page, opened from the ☰ button. */
+  .sidebar, body.nav-collapsed .sidebar { position: fixed; left: 0; top: var(--topbar-h); bottom: 0; height: auto; width: var(--side-w); transform: translateX(-100%); visibility: hidden; transition: transform .18s ease, visibility 0s .18s; }
+  body.nav-collapsed .sidebar .lbl { display: inline; }
+  body.nav-open .sidebar { transform: none; visibility: visible; transition: transform .18s ease; box-shadow: 4px 0 18px rgb(0 0 0 / .35); }
+  .topbar { gap: .5rem; padding-right: .5rem; }
+  #updated { display: none; }
   .tpl-layout, .tpl-editor { grid-template-columns: 1fr; }
   .grid.two { grid-template-columns: 1fr; }
   input[type="search"], input[type="text"], .quick { min-width: 0; width: 100%; }
+  .quick { flex: 1 1 auto; }
 }
-@media print { .topbar, .foot, .toolbar, .actions, .btn, .live { display: none !important; } body { background: #fff; color: #000; } }
+@media (max-width: 560px) { .brand { display: none; } }
+@media print { .topbar, .sidebar, .scrim, .foot, .toolbar, .actions, .btn, .live { display: none !important; } body { background: #fff; color: #000; } }

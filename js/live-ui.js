@@ -31,6 +31,6 @@ export function fetchedLine(key, label) {
 export function getStarted() {
   return h("div", { class: "card" },
     h("h2", {}, "Nothing fetched yet"),
-    h("p", {}, "This app never contacts anything in the background. Press ", h("strong", {}, "↻ Update"), " (top right) to fetch the CISA KEV catalogue and the latest CVEs, or use the buttons on each page."),
+    h("p", {}, "This app never contacts anything in the background. Press ", h("strong", {}, "↻ Update"), " (top right) to fetch the CISA KEV catalogue, the latest CVEs and news headlines, or use the buttons on each page."),
     h("p", { class: "muted small" }, "If a fetch says it was blocked, open ", h("a", { href: "#/sources" }, "Sources → Test sources"), " to see which services your browser is allowed to read."));
 }

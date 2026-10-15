@@ -31,45 +31,56 @@
 </head>
 <body>
   <header class="topbar">
+    <button id="nav-toggle" class="nav-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse navigation" title="Collapse navigation">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
     <div class="brand"><span class="logo" aria-hidden="true">◈</span> SOC Dashboard</div>
-    <nav id="nav" aria-label="Main">
-      <a href="#/overview" data-route="overview">Overview</a>
-      <a href="#/cves" data-route="cves">CVEs</a>
-      <a href="#/kev" data-route="kev">KEV</a>
-      <a href="#/news" data-route="news">News</a>
-      <a href="#/lookup" data-route="lookup">Lookup</a>
-      <a href="#/attack" data-route="attack">ATT&amp;CK</a>
-      <a href="#/templates" data-route="templates">Templates</a>
-      <a href="#/playbooks" data-route="playbooks">Playbooks</a>
-      <a href="#/toolkit" data-route="toolkit">Toolkit</a>
-      <a href="#/reference" data-route="reference">Reference</a>
-      <a href="#/sources" data-route="sources">Sources</a>
-    </nav>
     <input id="quick" type="search" class="quick" placeholder="Quick lookup ( / )  T1059 · APT29 · CVE-…" aria-label="Quick lookup">
     <div class="top-actions">
       <span id="updated" class="muted small" title="When each dataset was last fetched"></span>
-      <button id="refresh" class="btn js-task" type="button" title="Fetch the KEV catalogue and the latest CVEs now">↻ Update</button>
+      <button id="refresh" class="btn js-task" type="button" title="Fetch the KEV catalogue, the latest CVEs and news headlines now">↻ Update</button>
       <button id="theme" class="btn" type="button" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
     </div>
   </header>
 
-  <div id="live" class="live" role="status" aria-live="polite" hidden>
-    <span id="live-msg"></span>
-    <button id="live-cancel" class="btn sm danger" type="button" hidden>Cancel</button>
-    <button id="live-close" class="btn sm" type="button" aria-label="Dismiss">✕</button>
-  </div>
-  <div id="banner" class="banner" hidden></div>
-  <main id="app" tabindex="-1" aria-live="polite"><p class="muted">Loading…</p></main>
+  <div class="shell">
+    <aside id="sidebar" class="sidebar">
+      <nav id="nav" aria-label="Main">
+        <a href="#/overview" data-route="overview" title="Overview"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">Overview</span></a>
+        <a href="#/cves" data-route="cves" title="CVEs"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16.5v.01"/></svg><span class="lbl">CVEs</span></a>
+        <a href="#/kev" data-route="kev" title="KEV"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span class="lbl">KEV</span></a>
+        <a href="#/news" data-route="news" title="News"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg><span class="lbl">News</span></a>
+        <a href="#/lookup" data-route="lookup" title="Lookup"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg><span class="lbl">Lookup</span></a>
+        <a href="#/attack" data-route="attack" title="ATT&amp;CK"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="9.5" y="3" width="5" height="12" rx="1"/><rect x="16" y="3" width="5" height="15" rx="1"/></svg><span class="lbl">ATT&amp;CK</span></a>
+        <a href="#/templates" data-route="templates" title="Templates"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg><span class="lbl">Templates</span></a>
+        <a href="#/playbooks" data-route="playbooks" title="Playbooks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 012 2v14a2 2 0 00-2-2H4zM20 4h-6a2 2 0 00-2 2v14a2 2 0 012-2h6z"/></svg><span class="lbl">Playbooks</span></a>
+        <a href="#/toolkit" data-route="toolkit" title="Toolkit"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6.5a4 4 0 00-5.3 5.3L3 18l3 3 6.2-6.2a4 4 0 005.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/></svg><span class="lbl">Toolkit</span></a>
+        <a href="#/reference" data-route="reference" title="Reference"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg><span class="lbl">Reference</span></a>
+        <a href="#/sources" data-route="sources" title="Sources"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="2.5"/><path d="M4 5.5v13c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-13M4 12c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5"/></svg><span class="lbl">Sources</span></a>
+      </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
 
-  <footer class="foot small muted">
-    Data is fetched by your browser, only when you ask, from
-    <a href="https://nvd.nist.gov/" rel="noopener noreferrer" target="_blank">NVD</a>,
-    <a href="https://vulnerability.circl.lu/" rel="noopener noreferrer" target="_blank">CIRCL</a>,
-    <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" rel="noopener noreferrer" target="_blank">CISA KEV</a>,
-    <a href="https://www.first.org/epss/" rel="noopener noreferrer" target="_blank">FIRST EPSS</a>,
-    <a href="https://attack.mitre.org/" rel="noopener noreferrer" target="_blank">MITRE ATT&amp;CK&reg;</a> (&copy; The MITRE Corporation, used under its terms of use) and Hacker News.
-    This product uses data from the NVD API but is not endorsed or certified by the NVD. Everything you type here stays in your browser.
-  </footer>
+    <div class="content">
+      <div id="live" class="live" role="status" aria-live="polite" hidden>
+        <span id="live-msg"></span>
+        <button id="live-cancel" class="btn sm danger" type="button" hidden>Cancel</button>
+        <button id="live-close" class="btn sm" type="button" aria-label="Dismiss">✕</button>
+      </div>
+      <div id="banner" class="banner" hidden></div>
+      <main id="app" tabindex="-1" aria-live="polite"><p class="muted">Loading…</p></main>
+
+    <footer class="foot small muted">
+      Data is fetched by your browser, only when you ask, from
+      <a href="https://nvd.nist.gov/" rel="noopener noreferrer" target="_blank">NVD</a>,
+      <a href="https://vulnerability.circl.lu/" rel="noopener noreferrer" target="_blank">CIRCL</a>,
+      <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" rel="noopener noreferrer" target="_blank">CISA KEV</a>,
+      <a href="https://www.first.org/epss/" rel="noopener noreferrer" target="_blank">FIRST EPSS</a>,
+      <a href="https://attack.mitre.org/" rel="noopener noreferrer" target="_blank">MITRE ATT&amp;CK&reg;</a> (&copy; The MITRE Corporation, used under its terms of use) and Hacker News.
+      This product uses data from the NVD API but is not endorsed or certified by the NVD. Everything you type here stays in your browser.
+    </footer>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>
