@@ -158,6 +158,7 @@ ul.about-points { list-style: none; padding: 0; margin: .5rem 0; display: grid; 
 ul.about-points li { padding-left: 1.6rem; position: relative; }
 ul.about-points li::before { content: "✓"; position: absolute; left: .2rem; color: var(--low); font-weight: 800; }
 .about .card ul.small li { margin: .3rem 0; }
+.about td a, .about th a { white-space: nowrap; }
 .foot .credit { text-align: center; margin: 1.25rem 0 0; font-weight: 600; letter-spacing: .02em; }
 /* Timeline table: scrolls inside the card on narrow screens instead of widening the page; times never wrap mid-value. */
 .tl-wrap { overflow-x: auto; margin: .5rem 0; }
