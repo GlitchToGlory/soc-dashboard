@@ -14,6 +14,7 @@ Nothing is fetched until **you** press a button, so there is no background job, 
 | **ATT&CK** | Full MITRE ATT&CK lookup: matrix, search, groups, software, mitigations, detections, text→technique mapper, Navigator layer export. One-time ~40 MB download, built in a Web Worker and stored in your browser |
 | **Templates / Playbooks / Toolkit / Reference** | 11 analyst templates, 6 response checklists, IOC extractor/defanger, incident timeline builder (any timestamp format → sorted UTC timeline → incident report), URL analyser & unwrapper (Safe Links, Proofpoint, lookalike domains), email-header analyser, Base64/URL/hex decoder, timestamp + FILETIME, CIDR, CVSS decoder, 17 KQL hunting queries, TLP/kill chain/ports/commands/event IDs, 56 links |
 | **Sources** | **Test sources** (which services your browser may read), fetch settings, storage, *Delete fetched data* |
+| **About** | What the site is, what leaves your browser and what's stored on your device, the security measures, and data attribution (bottom of the menu) |
 
 Press **/** anywhere for quick lookup: `T1059.001`, `APT29`, `CVE-2026-1234`.
 
